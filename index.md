@@ -4,28 +4,3 @@
 
 ----------
 
-
-$$
-\text{\color{red}「There is no fruit on the tree of wisdom」}
-$$
-
-$$
-\text{\color{blue}「and the fool under it is me」}
-$$
-
-$$
-\text{「智慧树上没有果，树下傻逼就是我」}
-$$
-
-
--------------
-
-
-$$
-\text{欢迎加Q}
-$$
-
-$$
-2961593223
-$$
-
