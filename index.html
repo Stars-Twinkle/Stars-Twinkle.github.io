@@ -633,6 +633,29 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 }
 .admin-danger { color: #ff8a8a; border-color: rgba(255, 120, 120, .35); }
 .admin-msg { min-height: 1.2em; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.admin-msg.err { color: #ff8a8a; }
+
+/* 通行密钥错误：登入窗口闪红并抖动 */
+.admin-card.error {
+  border-color: rgba(255, 92, 92, .8);
+  box-shadow: 0 0 0 1px rgba(255, 92, 92, .45), 0 0 46px rgba(255, 70, 70, .32), 0 30px 80px rgba(0, 0, 0, .5);
+  animation: admin-shake .45s cubic-bezier(.36, .07, .19, .97);
+}
+@keyframes admin-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-10px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(3px); }
+}
+.admin-input.error {
+  border-color: rgba(255, 92, 92, .9) !important;
+  animation: admin-redflash .65s ease-out;
+}
+@keyframes admin-redflash {
+  0%   { background: rgba(255, 70, 70, .40); box-shadow: 0 0 0 4px rgba(255, 70, 70, .18); }
+  100% { background: rgba(255, 70, 70, .05); box-shadow: 0 0 0 0 rgba(255, 70, 70, 0); }
+}
 .admin-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
@@ -1451,8 +1474,13 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var root = document.getElementById('admin');
   if (!API || !root) return;
 
-  var PASS = 'Liu12358';
+  // 通行密钥只以 SHA-256 哈希保存，源码里不出现明文
+  var PASS_SHA256 = 'b005d632b831214cac90f67dbbd743b9154810167551792a3f950f3b875f3024';
   var SESSION = 'st-admin-ok';
+  var MAX_TRIES = 3;          // 连续错误几次后锁定
+  var LOCK_SECONDS = 15;      // 锁定时长
+  var tries = 0;
+  var locked = false;
   var loginView = document.getElementById('admin-login');
   var panel = document.getElementById('admin-panel');
   var keyInput = document.getElementById('admin-key');
@@ -1486,6 +1514,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       panel.hidden = true;
       keyInput.value = '';
       msg.textContent = '';
+      msg.classList.remove('err');
       setTimeout(function () { keyInput.focus(); }, 50);
     }
   }
@@ -1541,18 +1570,91 @@ document.getElementById('year').textContent = new Date().getFullYear();
     }
   }
 
-  document.getElementById('admin-login-btn').addEventListener('click', function () {
-    if (keyInput.value === PASS) {
-      try { sessionStorage.setItem(SESSION, '1'); } catch (e) {}
-      open();
-    } else {
-      msg.textContent = '通行密钥不正确';
-      keyInput.value = '';
-      keyInput.focus();
+  /* SHA-256：crypto.subtle 需要安全上下文，HTTPS / localhost / file:// 都满足 */
+  function sha256Hex(str) {
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error('subtle-unavailable'));
+    var buf = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', buf).then(function (d) {
+      var arr = new Uint8Array(d), s = '';
+      for (var i = 0; i < arr.length; i++) s += ('00' + arr[i].toString(16)).slice(-2);
+      return s;
+    });
+  }
+
+  /* 登入失败：窗口闪红 + 抖动 + 输入框红闪 */
+  function flashError(text) {
+    msg.textContent = text;
+    msg.classList.add('err');
+    var card = root.querySelector('.admin-card');
+    [card, keyInput].forEach(function (el) {
+      el.classList.remove('error');
+      void el.offsetWidth;                 // 强制回流，让动画能重复播放
+      el.classList.add('error');
+    });
+    clearTimeout(flashError.timer);
+    flashError.timer = setTimeout(function () {
+      card.classList.remove('error');
+      keyInput.classList.remove('error');
+    }, 900);
+  }
+
+  function showMsg(text) {
+    msg.textContent = text;
+    msg.classList.remove('err');
+  }
+
+  function failAttempt() {
+    tries++;
+    keyInput.value = '';
+    if (tries >= MAX_TRIES) {
+      var btn = document.getElementById('admin-login-btn');
+      var left = LOCK_SECONDS;
+      locked = true;
+      btn.disabled = true;
+      flashError('密钥错误次数过多，请等待 ' + left + ' 秒');
+      var timer = setInterval(function () {
+        left--;
+        if (left <= 0) {
+          clearInterval(timer);
+          locked = false;
+          tries = 0;
+          btn.disabled = false;
+          showMsg('');
+        } else {
+          msg.textContent = '密钥错误次数过多，请等待 ' + left + ' 秒';
+        }
+      }, 1000);
+      return;
     }
-  });
+    flashError('通行密钥不正确（还可尝试 ' + (MAX_TRIES - tries) + ' 次）');
+    keyInput.focus();
+  }
+
+  function tryLogin() {
+    if (locked) return;
+    var val = keyInput.value;
+    if (!val) {
+      flashError('请输入通行密钥');
+      keyInput.focus();
+      return;
+    }
+    sha256Hex(val).then(function (hex) {
+      if (hex === PASS_SHA256) {
+        tries = 0;
+        try { sessionStorage.setItem(SESSION, '1'); } catch (e) {}
+        showMsg('');
+        open();
+      } else {
+        failAttempt();
+      }
+    }).catch(function () {
+      flashError('当前环境不支持安全校验，请通过 HTTPS 打开本页');
+    });
+  }
+
+  document.getElementById('admin-login-btn').addEventListener('click', tryLogin);
   keyInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') document.getElementById('admin-login-btn').click();
+    if (e.key === 'Enter') tryLogin();
   });
   document.getElementById('admin-logout').addEventListener('click', function () {
     try { sessionStorage.removeItem(SESSION); } catch (e) {}
