@@ -1,33 +1,55 @@
 # StarsTwinkle 的小窝
 
-个人主页，纯静态（HTML / CSS / 原生 JavaScript），零依赖、零构建，托管在 GitHub Pages。
 
-线上地址：<https://stars-twinkle.github.io/>
+🔗 在线访问：<https://stars-twinkle.github.io/>
 
-## 文件说明
+---
 
-| 文件 | 用途 |
+## 关于这里
+
+这里是 **StarsTwinkle** 的个人主页。
+
+页面很轻，只有两块内容：
+
+- **关于** —— 我在各个平台的链接，想找我聊天从这里开始；
+- **公告** —— 一些通知、更新和碎碎念，支持 Markdown 排版。
+
+没有框架、没有构建步骤，所有样式和脚本都写在一个 `index.html` 里，打开就是完整的样子。
+
+## 找到我
+
+| 平台 | 地址 |
 | --- | --- |
-| `index.html` | 整个站点，样式与脚本全部内联在这一个文件里 |
-| `avatar.jpg` | 头像 |
-| `favicon.png` / `apple-touch-icon.png` | 站点图标 |
-| `announcements.json` | 公告数据，页面加载时会读取，所有访客可见 |
+| 洛谷 | <https://www.luogu.com.cn/user/1267405> |
+| Codeforces | <https://codeforces.com/profile/StarsTwinkle> |
+| AtCoder | <https://atcoder.jp/users/StarsTwinkle> |
+| GitHub | <https://github.com/Stars-Twinkle> |
+| 博客园 | <https://www.cnblogs.com/StarsTwinkle> |
+| 知乎 | <https://www.zhihu.com/people/kuangfengzhixi> |
+| bilibili | <https://space.bilibili.com/3546392972757064> |
+| 邮箱 | <starstwinkle@vip.qq.com> |
 
-## 公告怎么发布
+## 页面里有什么
 
-1. 访问 `https://stars-twinkle.github.io/#admin`
-2. 输入通行密钥登入
-3. 新建 / 修改公告并保存
-4. 点「导出 JSON」得到 `announcements.json`
-5. 用它覆盖仓库里的 `announcements.json`，提交
+- **星空与代码背景** —— 背景里飘着的代码来自我平时写的 C++ 程序，它们会缓慢漂移、忽明忽暗，靠近鼠标时会变亮并被轻轻推开；
+- **深色 / 浅色主题** —— 右上角切换，默认跟随系统偏好，选择会被记住；
+- **公告** —— 用 Markdown 撰写，支持标题、列表、引用、代码块、链接等排版；
+- **响应式** —— 手机和桌面各有对应的排版；
+- 细节上照顾了 `prefers-reduced-motion`：系统开启「减少动态效果」时，所有动画都会安静下来。
 
-> 后台里编辑的内容只保存在**当前浏览器**（localStorage）。要让所有访客看到，必须完成第 4–5 步把它提交到仓库。
+## 技术
 
-## 注意
+```text
+HTML + CSS + 原生 JavaScript
+零依赖 · 零构建 · 单文件
+托管于 GitHub Pages
+```
 
-- 后台入口只是隐藏，通行密钥写在前端源码中，**不具备真正的安全性**，请勿在其中放置敏感信息。
-- 更新后页面没变化通常是 GitHub Pages 缓存，等 1–2 分钟或按 Ctrl+F5 强制刷新。
+## 说明
 
-## 本地预览
+- 公告内容以本仓库中的 `announcements.json` 为准；
+- 站内的头像、文字与代码片段版权归作者所有，转载请注明出处。
 
-直接用浏览器打开 `index.html` 即可，不需要服务器。
+---
+
+想聊技术、讨论题目，或者只是打个招呼，上面任何一个链接都能找到我 ⭐
