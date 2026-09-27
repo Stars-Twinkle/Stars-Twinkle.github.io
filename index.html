@@ -789,6 +789,139 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .admin-msg { min-height: 1.2em; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
 .admin-msg.err { color: #ff8a8a; }
 
+/* ============ 文章页（二级页） ============ */
+.page {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: start center;
+  padding: 24px 16px;
+  overflow: auto;
+  background: rgba(4, 6, 14, .78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+[data-theme="light"] .page { background: rgba(30, 32, 45, .45); }
+.page[hidden] { display: none; }
+.page-card {
+  position: relative;
+  width: min(980px, 96vw);
+  margin: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+}
+.page-title { margin: 0 0 18px; font-size: 22px; }
+
+/* 文章列表表格 */
+.art-table-wrap { overflow-x: auto; }
+.art-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.art-table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.art-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.art-table td:first-child { white-space: normal; }
+.art-table th:first-child { width: 100%; }
+.art-table tbody tr:hover td { background: var(--card); }
+.art-table .c-cat, .art-table .c-state, .art-table .c-date,
+.art-table .c-top, .art-table .c-act { width: 1%; white-space: nowrap; }
+.art-link {
+  color: var(--accent-2);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.art-link:hover { text-decoration: underline; }
+.art-link::after { content: "↗"; font-size: 12px; opacity: .7; }
+.art-cat { color: var(--muted); }
+.art-state { font-size: 13px; }
+.art-state::before { content: "●"; margin-right: 5px; font-size: 10px; }
+.art-state.public::before { color: #3f9d5a; }
+.art-state.draft { color: var(--muted); }
+.art-state.draft::before { color: var(--muted); }
+.art-top { color: var(--accent); font-size: 13px; }
+.art-act-btn {
+  background: none;
+  border: 0;
+  color: var(--accent-2);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.art-act-btn:hover { text-decoration: underline; }
+
+/* 文章详情 */
+.art-detail { margin-top: 16px; }
+.art-detail > h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -.4px; }
+.art-detail-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.art-detail .md-body { font-size: 15.5px; }
+
+/* 后台：标签页与文章元信息 */
+.admin-head-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.admin-tab {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.admin-tab.is-active { background: var(--card-hover); color: var(--text); font-weight: 600; }
+.admin-art-meta {
+  display: grid;
+  grid-template-columns: 1fr 130px auto;
+  gap: 10px;
+  align-items: center;
+}
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.admin-check input { accent-color: var(--accent); }
+select.admin-input { cursor: pointer; }
+@media (max-width: 620px) {
+  .admin-art-meta { grid-template-columns: 1fr; }
+}
+
 /* 通行密钥错误：整个弹层闪红 + 卡片染红抖动 */
 .admin.error { animation: admin-overlay .8s ease-out; }
 @keyframes admin-overlay {
@@ -867,6 +1000,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .admin-help { font-size: 12.5px; color: var(--accent); text-decoration: none; white-space: nowrap; }
 .admin-publish .admin-msg { grid-column: 1 / -1; margin: 0; }
 .admin-cols { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start; }
+.admin-cols[hidden] { display: none; }
 .admin-list {
   list-style: none; margin: 0; padding: 0;
   display: grid; gap: 8px; max-height: 62vh; overflow: auto;
@@ -1083,7 +1217,7 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <footer class="wrap">
   <span>© <span id="year">2026</span> StarsTwinkle</span>
-  <span>Powered by <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></span>
+  <span><a href="#articles">文章</a> · Powered by <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></span>
 </footer>
 
 <a class="icon-btn" id="top" href="#top" aria-label="回到顶部">
@@ -1105,7 +1239,13 @@ footer a { color: var(--accent); text-decoration: none; }
 
     <div id="admin-panel" hidden>
       <div class="admin-head">
-        <b>公告管理</b>
+        <div class="admin-head-left">
+          <b id="admin-pane-title">公告管理</b>
+          <div class="admin-tabs">
+            <button id="admin-tab-notice" class="admin-tab is-active" type="button">公告</button>
+            <button id="admin-tab-article" class="admin-tab" type="button">文章</button>
+          </div>
+        </div>
         <div class="admin-head-actions">
           <button id="admin-publish" class="admin-btn admin-primary" type="button">发布到线上</button>
           <button id="admin-new" class="admin-btn" type="button">新建</button>
@@ -1131,7 +1271,7 @@ footer a { color: var(--accent); text-decoration: none; }
         <p id="admin-publish-msg" class="admin-msg"></p>
       </div>
 
-      <div class="admin-cols">
+      <div id="admin-pane-notice" class="admin-cols">
         <ul id="admin-list" class="admin-list"></ul>
         <div class="admin-edit">
           <input id="admin-notice-title" class="admin-input" placeholder="公告标题">
@@ -1146,6 +1286,62 @@ footer a { color: var(--accent); text-decoration: none; }
           </div>
         </div>
       </div>
+
+      <div id="admin-pane-article" class="admin-cols" hidden>
+        <ul id="admin-art-list" class="admin-list"></ul>
+        <div class="admin-edit">
+          <input id="admin-art-title" class="admin-input" placeholder="文章标题">
+          <div class="admin-art-meta">
+            <input id="admin-art-cat" class="admin-input" placeholder="分类（如：题解）">
+            <select id="admin-art-state" class="admin-input">
+              <option value="public">公开</option>
+              <option value="draft">草稿</option>
+            </select>
+            <label class="admin-check"><input type="checkbox" id="admin-art-top"> 置顶</label>
+          </div>
+          <div class="md-split">
+            <textarea id="admin-art-md" class="md-input" spellcheck="false" placeholder="# 标题&#10;&#10;用 Markdown 写文章，右侧会实时预览…"></textarea>
+            <div id="admin-art-preview" class="md-preview md-body"></div>
+          </div>
+          <div class="admin-actions">
+            <button id="admin-art-save" class="admin-btn admin-primary" type="button">保存</button>
+            <button id="admin-art-del" class="admin-btn admin-danger" type="button">删除</button>
+            <span id="admin-art-msg" class="admin-msg"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 文章页（#articles 列表 / #article/<id> 详情） ==================== -->
+<div id="articles-page" class="page" hidden>
+  <div class="page-card">
+    <button class="admin-x" id="articles-close" type="button" aria-label="关闭">×</button>
+
+    <div id="art-list-view">
+      <h2 class="page-title">文章</h2>
+      <div class="art-table-wrap">
+        <table class="art-table">
+          <thead>
+            <tr>
+              <th class="c-title">标题</th>
+              <th class="c-cat">分类</th>
+              <th class="c-state">状态</th>
+              <th class="c-date">发布时间</th>
+              <th class="c-top">置顶</th>
+              <th class="c-act">操作</th>
+            </tr>
+          </thead>
+          <tbody id="art-rows"></tbody>
+        </table>
+      </div>
+      <p id="art-empty" class="notice-empty" hidden>还没有文章</p>
+    </div>
+
+    <div id="art-detail-view" hidden>
+      <button id="art-back" class="admin-btn" type="button">← 返回列表</button>
+      <article id="art-detail" class="art-detail"></article>
     </div>
   </div>
 </div>
@@ -1978,6 +2174,124 @@ document.getElementById('year').textContent = new Date().getFullYear();
   }
 })();
 
+/* ---------- 文章：数据层 + 二级页（与公告分开存储） ---------- */
+(function () {
+  var KEY = 'st-articles';
+  var page = document.getElementById('articles-page');
+  if (!page) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var arr = JSON.parse(raw); if (Array.isArray(arr)) return arr; }
+    } catch (e) {}
+    return [];
+  }
+  function persist(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
+  function sorted(list) {
+    return list.slice().sort(function (a, b) {
+      if (!!b.top !== !!a.top) return b.top ? 1 : -1;
+      return (b.ts || 0) - (a.ts || 0);
+    });
+  }
+
+  function renderList() {
+    var tbody = document.getElementById('art-rows');
+    var empty = document.getElementById('art-empty');
+    var list = sorted(load()).filter(function (a) { return a.state !== 'draft'; });
+    tbody.innerHTML = '';
+    if (!list.length) { empty.hidden = false; return; }
+    empty.hidden = true;
+    list.forEach(function (a) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><a class="art-link" href="#article/' + encodeURIComponent(a.id) + '">' +
+          esc(a.title || '无标题') + '</a></td>' +
+        '<td><span class="art-cat">' + esc(a.category || '未分类') + '</span></td>' +
+        '<td><span class="art-state ' + (a.state === 'draft' ? 'draft' : 'public') + '">' +
+          (a.state === 'draft' ? '草稿' : '公开') + '</span></td>' +
+        '<td><span class="art-cat">' + esc(a.date || '') + '</span></td>' +
+        '<td><span class="art-top">' + (a.top ? '置顶' : '') + '</span></td>' +
+        '<td><button class="art-act-btn" type="button">阅读</button></td>';
+      tr.querySelector('.art-act-btn').addEventListener('click', function () {
+        location.hash = '#article/' + encodeURIComponent(a.id);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderDetail(id) {
+    var list = load(), a = null;
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) { a = list[i]; break; }
+    var box = document.getElementById('art-detail');
+    if (!a) {
+      box.innerHTML = '<h1>文章不存在</h1><p class="notice-empty">它可能已被删除。</p>';
+      return;
+    }
+    var render = window.STNotices ? window.STNotices.md : esc;
+    box.innerHTML =
+      '<h1>' + esc(a.title || '无标题') + '</h1>' +
+      '<div class="art-detail-meta">' +
+        '<span>' + esc(a.date || '') + '</span>' +
+        (a.category ? '<span>分类：' + esc(a.category) + '</span>' : '') +
+        '<span>' + (a.state === 'draft' ? '草稿' : '公开') + '</span>' +
+      '</div>' +
+      '<div class="md-body">' + render(a.body) + '</div>';
+    if (window.STNotices && window.STNotices.afterRender) window.STNotices.afterRender(box);
+  }
+
+  function showList() {
+    document.getElementById('art-list-view').hidden = false;
+    document.getElementById('art-detail-view').hidden = true;
+    renderList();
+  }
+  function showDetail(id) {
+    document.getElementById('art-list-view').hidden = true;
+    document.getElementById('art-detail-view').hidden = false;
+    renderDetail(id);
+  }
+
+  function route() {
+    var h = location.hash.replace(/^#\/?/, '');
+    var m = /^article\/(.+)$/.exec(h);
+    if (h === 'articles' || m) {
+      page.hidden = false;
+      document.body.style.overflow = 'hidden';
+      if (m) showDetail(decodeURIComponent(m[1])); else showList();
+    } else {
+      page.hidden = true;
+      if (h.indexOf('admin') !== 0) document.body.style.overflow = '';
+    }
+  }
+
+  document.getElementById('articles-close').addEventListener('click', function () { location.hash = ''; });
+  document.getElementById('art-back').addEventListener('click', function () { location.hash = '#articles'; });
+  window.addEventListener('hashchange', route);
+
+  window.STArticles = {
+    KEY: KEY, esc: esc, load: load, save: persist,
+    sorted: sorted, renderList: renderList
+  };
+  route();
+
+  // 本地没有数据时，读站点根目录的 articles.json（供发布给所有访客）
+  var hasLocal = false;
+  try { hasLocal = !!localStorage.getItem(KEY); } catch (e) {}
+  if (!hasLocal && window.fetch) {
+    fetch('articles.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (arr) {
+        if (Array.isArray(arr) && arr.length) { persist(arr); renderList(); }
+      })
+      .catch(function () { /* 文件不存在时忽略 */ });
+  }
+})();
+
 /* ---------- 后台（页面无入口，访问 #admin 才会出现） ---------- */
 (function () {
   var API = window.STNotices;
@@ -2224,16 +2538,19 @@ document.getElementById('year').textContent = new Date().getFullYear();
   });
 
   document.getElementById('admin-export').addEventListener('click', function () {
-    var json = JSON.stringify(API.load(), null, 2);
-    var blob = new Blob([json], { type: 'application/json' });
+    var isArt = !document.getElementById('admin-pane-article').hidden;
+    var name = isArt ? 'articles.json' : 'announcements.json';
+    var data = isArt ? (window.STArticles ? window.STArticles.load() : []) : API.load();
+    var blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'announcements.json';
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
-    status.textContent = '已导出 announcements.json：放到站点根目录并提交，访客就能看到';
+    var tip = '已导出 ' + name + '：放到站点根目录并提交，访客就能看到';
+    if (isArt && artMsg) artMsg.textContent = tip; else status.textContent = tip;
   });
 
   mdEl.addEventListener('input', preview);
@@ -2297,7 +2614,6 @@ document.getElementById('year').textContent = new Date().getFullYear();
     setCfg('st-gh-repo', repo);
     setCfg('st-gh-token', token);
 
-    var url = 'https://api.github.com/repos/' + repo + '/contents/announcements.json';
     var headers = {
       'Authorization': 'Bearer ' + token,
       'Accept': 'application/vnd.github+json',
@@ -2316,41 +2632,173 @@ document.getElementById('year').textContent = new Date().getFullYear();
       btn.disabled = false;
     }
 
-    fetch(url + '?ref=' + BRANCH, { headers: headers, cache: 'no-store' })
-      .then(function (r) {
-        if (r.status === 404) return null;          // 文件还不存在，走新建
-        return r.json().then(function (j) {
-          if (!r.ok) throw j;
-          return j;
-        });
-      })
-      .then(function (cur) {
-        var body = {
-          message: 'update announcements',
-          content: toBase64(JSON.stringify(API.load(), null, 2) + '\n'),
-          branch: BRANCH
-        };
-        if (cur && cur.sha) body.sha = cur.sha;      // 更新已有文件必须带 sha
-        return fetch(url, {
-          method: 'PUT',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-          body: JSON.stringify(body)
-        }).then(function (r) {
-          return r.json().then(function (j) {
-            if (!r.ok) throw j;
-            return j;
+    /* 一次发布两个文件：公告 + 文章 */
+    var files = [
+      { path: 'announcements.json', text: JSON.stringify(API.load(), null, 2) + '\n' },
+      { path: 'articles.json', text: JSON.stringify(window.STArticles ? window.STArticles.load() : [], null, 2) + '\n' }
+    ];
+    var done = [], idx = 0;
+
+    function putOne(f, cb) {
+      var url = 'https://api.github.com/repos/' + repo + '/contents/' + f.path;
+      fetch(url + '?ref=' + BRANCH, { headers: headers, cache: 'no-store' })
+        .then(function (r) {
+          if (r.status === 404) return null;        // 文件还不存在，走新建
+          return r.json().then(function (j) { if (!r.ok) throw j; return j; });
+        })
+        .then(function (cur) {
+          var body = { message: 'update ' + f.path, content: toBase64(f.text), branch: BRANCH };
+          if (cur && cur.sha) body.sha = cur.sha;   // 更新已有文件必须带 sha
+          return fetch(url, {
+            method: 'PUT',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+            body: JSON.stringify(body)
+          }).then(function (r) {
+            return r.json().then(function (j) { if (!r.ok) throw j; return j; });
           });
-        });
-      })
-      .then(function (res) {
-        var sha = (res.commit && res.commit.sha) || '';
-        pubMsg.innerHTML = '已提交 <code>' + sha.slice(0, 7) + '</code>，GitHub Pages 约 30~60 秒后更新 · ' +
-          '<a href="https://github.com/' + API.esc(repo) + '/commit/' + sha +
-          '" target="_blank" rel="noopener">查看这次提交</a>';
+        })
+        .then(function (res) { cb(null, (res.commit && res.commit.sha) || ''); })
+        .catch(function (e) { cb(e); });
+    }
+
+    function step() {
+      if (idx >= files.length) {
+        pubMsg.innerHTML = '已提交 <code>' + done.join('</code>、<code>') +
+          '</code>，GitHub Pages 约 30~60 秒后更新';
         btn.disabled = false;
-      })
-      .catch(fail);
+        return;
+      }
+      var f = files[idx++];
+      putOne(f, function (err, sha) {
+        if (err) { fail(err); return; }
+        done.push(f.path.replace('.json', '') + ' ' + sha.slice(0, 7));
+        step();
+      });
+    }
+    step();
   });
+
+  /* ---------- 后台：文章管理 ---------- */
+  var ART = window.STArticles;
+  var artListEl = document.getElementById('admin-art-list');
+  var artTitleEl = document.getElementById('admin-art-title');
+  var artCatEl = document.getElementById('admin-art-cat');
+  var artStateEl = document.getElementById('admin-art-state');
+  var artTopEl = document.getElementById('admin-art-top');
+  var artMdEl = document.getElementById('admin-art-md');
+  var artPrevEl = document.getElementById('admin-art-preview');
+  var artMsg = document.getElementById('admin-art-msg');
+  var artCurrentId = null;
+
+  function nowTime() {
+    var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function artPreview() {
+    artPrevEl.innerHTML = API.md(artMdEl.value) || '<p class="notice-empty">（预览）</p>';
+    if (API.afterRender) API.afterRender(artPrevEl);
+  }
+  if (ART) (window.__renderQueue = window.__renderQueue || []).push(function () { artPreview(); });
+  artMdEl.addEventListener('input', artPreview);
+
+  function artRefresh() {
+    if (!ART) return;
+    var list = ART.sorted(ART.load());
+    artListEl.innerHTML = '';
+    if (!list.length) {
+      artListEl.innerHTML = '<li><span class="li-title">还没有文章</span></li>';
+      return;
+    }
+    list.forEach(function (a) {
+      var li = document.createElement('li');
+      if (a.id === artCurrentId) li.className = 'active';
+      li.innerHTML = '<span class="li-title">' + API.esc(a.title || '无标题') + '</span>' +
+        '<small>' + API.esc((a.date || '').slice(5, 10)) + '</small>';
+      li.addEventListener('click', function () { artEdit(a.id); });
+      artListEl.appendChild(li);
+    });
+  }
+
+  function artEdit(id) {
+    if (!ART) return;
+    var list = ART.load();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        var a = list[i];
+        artCurrentId = id;
+        artTitleEl.value = a.title || '';
+        artCatEl.value = a.category || '';
+        artStateEl.value = a.state || 'public';
+        artTopEl.checked = !!a.top;
+        artMdEl.value = a.body || '';
+        artPreview();
+        artMsg.textContent = '';
+        artRefresh();
+        return;
+      }
+    }
+  }
+
+  document.getElementById('admin-art-save').addEventListener('click', function () {
+    if (!ART) return;
+    var title = artTitleEl.value.trim(), body = artMdEl.value;
+    if (!title && !body.trim()) { artMsg.textContent = '标题和内容不能都为空'; return; }
+    if (!artCurrentId) artCurrentId = 'a' + Date.now();
+    var list = ART.load(), found = false;
+    for (var i = 0; i < list.length; i++) if (list[i].id === artCurrentId) { found = true; break; }
+    var item = {
+      id: artCurrentId,
+      title: title || '无标题',
+      category: artCatEl.value.trim(),
+      state: artStateEl.value,
+      top: artTopEl.checked,
+      body: body,
+      date: today() + ' ' + nowTime(),
+      ts: Date.now()
+    };
+    if (found) {
+      for (var j = 0; j < list.length; j++) if (list[j].id === artCurrentId) { list[j] = item; break; }
+    } else {
+      list.push(item);
+    }
+    ART.save(list);
+    ART.renderList();
+    artRefresh();
+    artMsg.textContent = '已保存（保存在本浏览器）';
+  });
+
+  document.getElementById('admin-art-del').addEventListener('click', function () {
+    if (!ART) return;
+    if (!artCurrentId) { artMsg.textContent = '先选中一篇文章'; return; }
+    if (!window.confirm('确定删除这篇文章？')) return;
+    ART.save(ART.load().filter(function (x) { return x.id !== artCurrentId; }));
+    artCurrentId = null;
+    artTitleEl.value = '';
+    artCatEl.value = '';
+    artStateEl.value = 'public';
+    artTopEl.checked = false;
+    artMdEl.value = '';
+    artPreview();
+    ART.renderList();
+    artRefresh();
+    artMsg.textContent = '已删除';
+  });
+
+  /* 公告 / 文章 标签切换 */
+  var paneNotice = document.getElementById('admin-pane-notice');
+  var paneArticle = document.getElementById('admin-pane-article');
+  var paneTitle = document.getElementById('admin-pane-title');
+  function switchTab(which) {
+    var isArt = which === 'article';
+    paneNotice.hidden = isArt;
+    paneArticle.hidden = !isArt;
+    paneTitle.textContent = isArt ? '文章管理' : '公告管理';
+    document.getElementById('admin-tab-notice').classList.toggle('is-active', !isArt);
+    document.getElementById('admin-tab-article').classList.toggle('is-active', isArt);
+    if (isArt) artRefresh(); else refresh();
+  }
+  document.getElementById('admin-tab-notice').addEventListener('click', function () { switchTab('notice'); });
+  document.getElementById('admin-tab-article').addEventListener('click', function () { switchTab('article'); });
 
   window.addEventListener('hashchange', sync);
   sync();
