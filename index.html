@@ -1094,6 +1094,82 @@ select.admin-input { cursor: pointer; }
   font-size: 13.5px;
   line-height: 1.7;
 }
+
+/* ---------- 编辑器语法高亮（textarea 透明文字 + 底层高亮） ---------- */
+.md-editor {
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+}
+.md-editor .md-hl {
+  position: absolute;
+  top: 0; left: 0;
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  tab-size: 2;
+  pointer-events: none;
+}
+.md-editor textarea.md-input {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-height: 320px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+  resize: none;
+  outline: none;
+  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  tab-size: 2;
+}
+.md-editor textarea.md-input::placeholder { color: var(--muted); opacity: .65; }
+.md-editor textarea.md-input::selection { background: rgba(122, 162, 255, .35); }
+
+.md-hl .t-head { color: #ffb347; font-weight: 700; }
+.md-hl .t-fence { color: #7aa2ff; }
+.md-hl .t-code { color: #7ee0a8; border-radius: 4px; background: rgba(126, 224, 168, .12); }
+.md-hl .t-math { color: #d8a6ff; }
+.md-hl .t-bold { color: #ffd98a; font-weight: 700; }
+.md-hl .t-em { color: #ffd98a; font-style: italic; }
+.md-hl .t-del { color: var(--muted); text-decoration: line-through; }
+.md-hl .t-quote { color: #8fb8ff; }
+.md-hl .t-list { color: #ff9d6b; font-weight: 700; }
+.md-hl .t-task { color: #7ee0a8; }
+.md-hl .t-link { color: #6ec8ff; }
+.md-hl .t-url { color: var(--muted); }
+[data-theme="light"] .md-hl .t-head { color: #c2410c; }
+[data-theme="light"] .md-hl .t-fence { color: #2563eb; }
+[data-theme="light"] .md-hl .t-code { color: #047857; background: rgba(4, 120, 87, .1); }
+[data-theme="light"] .md-hl .t-math { color: #7c3aed; }
+[data-theme="light"] .md-hl .t-bold,
+[data-theme="light"] .md-hl .t-em { color: #b45309; }
+[data-theme="light"] .md-hl .t-quote { color: #1d4ed8; }
+[data-theme="light"] .md-hl .t-list { color: #c2410c; }
+[data-theme="light"] .md-hl .t-task { color: #047857; }
+[data-theme="light"] .md-hl .t-link { color: #0369a1; }
 .md-preview {
   min-height: 320px;
   max-height: 52vh;
@@ -1383,7 +1459,10 @@ footer a { color: var(--accent); text-decoration: none; }
         <div class="admin-edit">
           <input id="admin-notice-title" class="admin-input" placeholder="公告标题">
           <div class="md-split">
-            <textarea id="admin-md" class="md-input" spellcheck="false" placeholder="# 标题&#10;&#10;用 Markdown 写公告，右侧会实时预览…"></textarea>
+            <div class="md-editor">
+              <pre class="md-hl" aria-hidden="true"><code id="admin-md-hl"></code></pre>
+              <textarea id="admin-md" class="md-input" spellcheck="false" placeholder="# 标题&#10;&#10;用 Markdown 写公告，右侧会实时预览…"></textarea>
+            </div>
             <div id="admin-preview" class="md-preview md-body"></div>
           </div>
           <div class="admin-actions">
@@ -1407,7 +1486,10 @@ footer a { color: var(--accent); text-decoration: none; }
             <label class="admin-check"><input type="checkbox" id="admin-art-top"> 置顶</label>
           </div>
           <div class="md-split">
-            <textarea id="admin-art-md" class="md-input" spellcheck="false" placeholder="# 标题&#10;&#10;用 Markdown 写文章，右侧会实时预览…"></textarea>
+            <div class="md-editor">
+              <pre class="md-hl" aria-hidden="true"><code id="admin-art-md-hl"></code></pre>
+              <textarea id="admin-art-md" class="md-input" spellcheck="false" placeholder="# 标题&#10;&#10;用 Markdown 写文章，右侧会实时预览…"></textarea>
+            </div>
             <div id="admin-art-preview" class="md-preview md-body"></div>
           </div>
           <div class="admin-actions">
@@ -1710,9 +1792,8 @@ footer a { color: var(--accent); text-decoration: none; }
   var el = document.getElementById('typed-text');
   if (!el) return;
   var lines = [
-    'OI 选手 / 折腾算法的',
-    '偶尔写前端，偶尔写博客',
-    '把想法变成能跑起来的东西'
+    '智慧树上没有果，树下糖人你和我',
+    'No fruit on the wisdom tree, just sugar figures: you and me'
   ];
   var li = 0, ci = 0, deleting = false;
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2377,6 +2458,81 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var PAIRS = { '(': ')', '[': ']', '{': '}', '$': '$', '`': '`' };
   var CLOSERS = { ')': '(', ']': '[', '}': '{' };
 
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* 行内标记高亮（输入已经过 HTML 转义） */
+  function hlInline(s) {
+    var stash = [];
+    s = s.replace(/`([^`\n]+)`/g, function (m) {
+      stash.push('<span class="t-code">' + m + '</span>');
+      return '\u0001' + (stash.length - 1) + '\u0001';
+    });
+    s = s.replace(/\$[^$\n]+\$/g, function (m) {
+      stash.push('<span class="t-math">' + m + '</span>');
+      return '\u0001' + (stash.length - 1) + '\u0001';
+    });
+    s = s.replace(/\*\*[^*\n]+\*\*/g, function (m) { return '<span class="t-bold">' + m + '</span>'; })
+         .replace(/__[^_\n]+__/g, function (m) { return '<span class="t-bold">' + m + '</span>'; })
+         .replace(/~~[^~\n]+~~/g, function (m) { return '<span class="t-del">' + m + '</span>'; })
+         .replace(/(^|[^\w*])(\*[^*\n]+\*)/g, function (m, pre, body) {
+           return pre + '<span class="t-em">' + body + '</span>';
+         })
+         .replace(/!?\[[^\]\n]*\]\([^)\n]*\)/g, function (m) {
+           var i = m.indexOf('](');
+           return '<span class="t-link">' + m.slice(0, i + 1) + '</span>' +
+             '<span class="t-url">' + m.slice(i + 1) + '</span>';
+         });
+    return s.replace(/\u0001(\d+)\u0001/g, function (m, i) { return stash[i]; });
+  }
+
+  /* Markdown 源码高亮：保留原字符，只给语法标记上色 */
+  function hlMarkdown(src) {
+    var out = [];
+    var inFence = false;
+
+    String(src == null ? '' : src).split('\n').forEach(function (line) {
+      // 围栏开合标记，以及围栏内部的代码：整体标成代码色，不再做行内解析
+      if (/^\s*(`{3,}|~{3,})/.test(line)) {
+        inFence = !inFence;
+        out.push('<span class="t-fence">' + escHtml(line) + '</span>');
+        return;
+      }
+      if (inFence) {
+        out.push('<span class="t-code">' + escHtml(line) + '</span>');
+        return;
+      }
+      // 分隔线
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
+        out.push('<span class="t-fence">' + escHtml(line) + '</span>');
+        return;
+      }
+      var m;
+      // 标题
+      if ((m = /^(\s*)(#{1,6})(\s[\s\S]*)?$/.exec(line))) {
+        out.push(escHtml(m[1]) + '<span class="t-head">' + m[2] + '</span>' + hlInline(escHtml(m[3] || '')));
+        return;
+      }
+      // 引用
+      if ((m = /^(\s*)(>)(\s?)([\s\S]*)$/.exec(line))) {
+        out.push(escHtml(m[1]) + '<span class="t-quote">' + m[2] + m[3] + '</span>' + hlInline(escHtml(m[4])));
+        return;
+      }
+      // 列表 / 任务列表
+      if ((m = /^(\s*)([-*+]|\d+[.)])(\s+)(\[[ xX]\]\s+)?([\s\S]*)$/.exec(line))) {
+        out.push(escHtml(m[1]) + '<span class="t-list">' + m[2] + '</span>' + m[3] +
+          (m[4] ? '<span class="t-task">' + escHtml(m[4]) + '</span>' : '') + hlInline(escHtml(m[5])));
+        return;
+      }
+      out.push(hlInline(escHtml(line)));
+    });
+
+    return out.join('\n');
+  }
+
   function fire(el) {
     var ev;
     try { ev = new Event('input', { bubbles: true }); }
@@ -2400,6 +2556,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function enhance(ta) {
     if (!ta || ta.dataset.enhanced === '1') return;
     ta.dataset.enhanced = '1';
+
+    // 语法高亮层：textarea 文字透明，底层实时渲染着色后的源码
+    var hl = document.getElementById(ta.id + '-hl');
+    var layer = hl ? hl.closest('.md-hl') : null;
+    function syncHl() {
+      if (hl) hl.innerHTML = hlMarkdown(ta.value) + '\n';
+    }
+    function syncScroll() {
+      if (layer) {
+        layer.style.transform = 'translate(' + (-ta.scrollLeft) + 'px,' + (-ta.scrollTop) + 'px)';
+      }
+    }
+    ta.addEventListener('input', function () { syncHl(); syncScroll(); });
+    ta.addEventListener('scroll', syncScroll);
+    syncHl();
 
     ta.addEventListener('keydown', function (ev) {
       var mod = ev.ctrlKey || ev.metaKey;
