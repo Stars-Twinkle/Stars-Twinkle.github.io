@@ -603,7 +603,8 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   border: 0;
   border-radius: 0;
   background: none;
-  overflow-x: auto;
+  white-space: pre-wrap;      /* 长行自动折行，不出现横向滚动条 */
+  overflow-wrap: anywhere;
 }
 .md-body .md-code pre code {
   display: block;
@@ -612,22 +613,28 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   color: inherit;
   font-size: 13px;
   line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
 }
-.md-code.has-ln { display: flex; align-items: stretch; }
-.md-ln {
-  flex: 0 0 auto;
-  padding: 14px 10px;
+/* 行号：内嵌在每一行里，长行折行时也不会错位 */
+.md-code .cl { display: block; }
+.md-code.has-ln code { counter-reset: cl; }
+.md-code.has-ln .cl {
+  counter-increment: cl;
+  position: relative;
+  padding-left: 3.4em;
+}
+.md-code.has-ln .cl::before {
+  content: counter(cl);
+  position: absolute;
+  left: 0;
+  width: 2.4em;
   text-align: right;
   color: var(--muted);
-  opacity: .55;
-  font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.65;
+  opacity: .5;
   user-select: none;
-  border-right: 1px solid var(--border);
 }
-.md-code.has-ln pre { flex: 1 1 auto; min-width: 0; }
 .md-body blockquote {
   margin: 12px 0;
   padding: 6px 16px;
@@ -1910,12 +1917,9 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function codeBlockHTML(lang, flags, code) {
     var l = (lang || '').toLowerCase();
     l = LANG_ALIAS[l] || l || 'cpp';          // 洛谷：未指定语言时按 C++ 高亮
-    var body = '<pre><code class="language-' + esc(l) + '">' + esc(code) + '</code></pre>';
-    if (!/\bline-numbers\b/.test(flags)) return '<div class="md-code">' + body + '</div>';
-    var total = code.split('\n').length, nums = [];
-    for (var k = 1; k <= total; k++) nums.push(k);
-    return '<div class="md-code has-ln"><div class="md-ln" aria-hidden="true">' +
-      nums.join('<br>') + '</div>' + body + '</div>';
+    var withLn = /\bline-numbers\b/.test(flags);
+    return '<div class="md-code' + (withLn ? ' has-ln' : '') + '">' +
+      '<pre><code class="language-' + esc(l) + '">' + esc(code) + '</code></pre></div>';
   }
 
   function isTableSep(line) {
@@ -2151,14 +2155,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
     afterRender(box);
   }
 
-  /* 代码高亮（highlight.js，幂等） */
+  /* 代码高亮 + 行级包裹：行号内嵌在每行里，长行折行时也不会错位 */
   function highlightAll(scope) {
-    if (!window.hljs) return;
     var blocks = (scope || document).querySelectorAll('.md-body pre code');
     Array.prototype.forEach.call(blocks, function (el) {
       if (el.dataset.hl === '1') return;
       el.dataset.hl = '1';
-      try { window.hljs.highlightElement(el); } catch (e) {}
+
+      if (window.hljs) {
+        try { window.hljs.highlightElement(el); } catch (e) {}
+      }
+      var lines = el.innerHTML.replace(/\n$/, '').split('\n');
+      if (lines.length < 2) return;
+      el.innerHTML = lines.map(function (l) {
+        return '<span class="cl">' + (l === '' ? '&#8203;' : l) + '</span>';
+      }).join('');
     });
   }
 
