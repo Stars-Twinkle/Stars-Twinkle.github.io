@@ -812,6 +812,8 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   border-radius: 20px;
   padding: 26px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+  /* 让绿色/红色反馈能平滑退去，而不是硬切 */
+  transition: border-color .3s ease, box-shadow .3s ease, background .3s ease;
 }
 .admin-x {
   position: absolute;
@@ -2884,6 +2886,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     }
   }
   function close() {
+    clearOk();
+    clearError();
     root.hidden = true;
     lockScroll(false);
     if (isAdminHash()) location.hash = '';
@@ -2951,7 +2955,9 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   /* 登入失败：窗口闪红 + 抖动 + 输入框红闪 */
   function flashError(text) {
+    clearOk();                               // 先撤掉可能残留的绿色
     msg.textContent = text;
+    msg.classList.remove('ok');
     msg.classList.add('err');
     var card = root.querySelector('.admin-card');
     var els = [root, card, keyInput];        // 整个弹层 + 卡片 + 输入框一起闪红
@@ -2973,6 +2979,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   /* 密钥正确：整个弹层 + 卡片 + 输入框一起闪绿 */
   function flashOk(text) {
+    clearError();
     msg.textContent = text;
     msg.classList.remove('err');
     msg.classList.add('ok');
@@ -2984,10 +2991,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
       el.classList.add('ok');
     });
     clearTimeout(flashOk.timer);
-    flashOk.timer = setTimeout(function () {
-      els.forEach(function (el) { el.classList.remove('ok'); });
-      msg.classList.remove('ok');
-    }, 1600);
+    flashOk.timer = setTimeout(clearOk, 1600);
+  }
+
+  /* 收掉成功/错误的着色：切到后台面板或关闭弹窗时必须调用，
+     否则后台面板会带着绿/红边框一起显示出来 */
+  function clearOk() {
+    clearTimeout(flashOk.timer);
+    var card = root.querySelector('.admin-card');
+    [root, card, keyInput].forEach(function (el) { if (el) el.classList.remove('ok'); });
+    msg.classList.remove('ok');
+  }
+  function clearError() {
+    clearTimeout(flashError.timer);
+    var card = root.querySelector('.admin-card');
+    [root, card, keyInput].forEach(function (el) { if (el) el.classList.remove('error'); });
   }
 
   function failAttempt() {
@@ -3035,6 +3053,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           loginView.classList.add('admin-fade-out');
           setTimeout(function () {
             loginView.classList.remove('admin-fade-out');
+            clearOk();                       // 先撤掉绿色，免得后台面板带着绿框显示
             open();
             panel.classList.add('admin-fade-in');
             setTimeout(function () { panel.classList.remove('admin-fade-in'); }, 520);
