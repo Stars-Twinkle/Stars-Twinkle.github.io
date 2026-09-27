@@ -913,7 +913,8 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .art-table th:first-child { width: 100%; }
 .art-table tbody tr:hover td { background: var(--card); }
 .art-table .c-cat, .art-table .c-state, .art-table .c-date,
-.art-table .c-top, .art-table .c-act { width: 1%; white-space: nowrap; }
+.art-table .c-top, .art-table .c-views, .art-table .c-act { width: 1%; white-space: nowrap; }
+.art-views { color: var(--muted); font-variant-numeric: tabular-nums; }
 .art-link {
   color: var(--accent-2);
   text-decoration: none;
@@ -1394,6 +1395,7 @@ footer a { color: var(--accent); text-decoration: none; }
               <th class="c-state">状态</th>
               <th class="c-date">发布时间</th>
               <th class="c-top">置顶</th>
+              <th class="c-views">浏览</th>
               <th class="c-act">操作</th>
             </tr>
           </thead>
@@ -2374,6 +2376,38 @@ document.getElementById('year').textContent = new Date().getFullYear();
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+  /* 浏览量：纯静态站点没有后端，用免费的 Abacus 计数服务；取不到时显示 — */
+  var NS = 'stars-twinkle-github-io';
+  var COUNTER = 'https://abacus.jasoncameron.dev';
+  var viewCache = {};
+
+  function viewsGet(id) {
+    if (viewCache[id] !== undefined) return Promise.resolve(viewCache[id]);
+    return fetch(COUNTER + '/get/' + NS + '/' + encodeURIComponent(id), { cache: 'no-store' })
+      .then(function (r) {
+        if (r.status === 404) return 0;            // 还没人浏览过，记 0
+        return r.json().then(function (j) {
+          return (j && typeof j.value === 'number') ? j.value : 0;
+        });
+      })
+      .then(function (n) { viewCache[id] = n; return n; })
+      .catch(function () { return null; });        // 只有网络失败才显示 —
+  }
+  function viewsHit(id) {
+    return fetch(COUNTER + '/hit/' + NS + '/' + encodeURIComponent(id), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { return (j && typeof j.value === 'number') ? j.value : null; })
+      .catch(function () { return null; });
+  }
+  /* 把页面上所有 data-views 占位填成真实数字 */
+  function fillViews(scope) {
+    Array.prototype.forEach.call((scope || document).querySelectorAll('[data-views]'), function (el) {
+      viewsGet(el.getAttribute('data-views')).then(function (n) {
+        el.textContent = (n === null ? '—' : n);
+      });
+    });
+  }
+
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
@@ -2406,12 +2440,14 @@ document.getElementById('year').textContent = new Date().getFullYear();
           (a.state === 'draft' ? '草稿' : '公开') + '</span></td>' +
         '<td><span class="art-cat">' + esc(a.date || '') + '</span></td>' +
         '<td><span class="art-top">' + (a.top ? '置顶' : '') + '</span></td>' +
+        '<td><span class="art-views" data-views="' + esc(a.id) + '">—</span></td>' +
         '<td><button class="art-act-btn" type="button">阅读</button></td>';
       tr.querySelector('.art-act-btn').addEventListener('click', function () {
         location.hash = '#article/' + encodeURIComponent(a.id);
       });
       tbody.appendChild(tr);
     });
+    fillViews(tbody);
   }
 
   function renderDetail(id) {
@@ -2429,9 +2465,22 @@ document.getElementById('year').textContent = new Date().getFullYear();
         '<span>' + esc(a.date || '') + '</span>' +
         (a.category ? '<span>分类：' + esc(a.category) + '</span>' : '') +
         '<span>' + (a.state === 'draft' ? '草稿' : '公开') + '</span>' +
+        '<span>浏览 <b class="art-views">—</b></span>' +
       '</div>' +
       '<div class="md-body">' + render(a.body) + '</div>';
     if (window.STNotices && window.STNotices.afterRender) window.STNotices.afterRender(box);
+
+    // 进入详情计一次浏览；同一会话内重复打开不重复计数
+    var bid = 'st-viewed-' + id, counted = false;
+    try { counted = sessionStorage.getItem(bid) === '1'; } catch (e) {}
+    (counted ? viewsGet(id) : viewsHit(id)).then(function (n) {
+      if (n !== null) viewCache[id] = n;
+      var v = box.querySelector('.art-views');
+      if (v) v.textContent = (n === null ? '—' : n);
+      if (!counted && n !== null) {
+        try { sessionStorage.setItem(bid, '1'); } catch (e) {}
+      }
+    });
   }
 
   function showList() {
@@ -2489,7 +2538,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   window.STArticles = {
     KEY: KEY, esc: esc, load: load, save: persist,
-    sorted: sorted, renderList: renderList
+    sorted: sorted, renderList: renderList, fillViews: fillViews
   };
   route();
 
@@ -3147,10 +3196,12 @@ document.getElementById('year').textContent = new Date().getFullYear();
       var li = document.createElement('li');
       if (a.id === artCurrentId) li.className = 'active';
       li.innerHTML = '<span class="li-title">' + API.esc(a.title || '无标题') + '</span>' +
-        '<small>' + API.esc((a.date || '').slice(5, 10)) + '</small>';
+        '<small>' + API.esc((a.date || '').slice(5, 10)) +
+        ' · <span data-views="' + API.esc(a.id) + '">—</span></small>';
       li.addEventListener('click', function () { artEdit(a.id); });
       artListEl.appendChild(li);
     });
+    if (ART.fillViews) ART.fillViews(artListEl);
   }
 
   function artEdit(id) {
