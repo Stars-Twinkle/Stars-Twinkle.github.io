@@ -1803,7 +1803,7 @@ footer a { color: var(--accent); text-decoration: none; }
     var full = lines[li];
     var isAscii = /^[\x20-\x7e]*$/.test(full);   // 纯英文句子打得更快
     if (deleting) {
-      ci = Math.max(0, ci - 3);                  // 删除一次退三个字符
+      ci = Math.max(0, ci - 1);                  // 逐字回退
     } else {
       ci += 1;
     }
@@ -1812,15 +1812,15 @@ footer a { color: var(--accent); text-decoration: none; }
     var wait;
     if (!deleting && ci >= full.length) {
       deleting = true;
-      wait = 1400;                               // 打完停顿
+      wait = 1600;                               // 打完停顿，让人看清整句
     } else if (deleting && ci <= 0) {
       deleting = false;
       li = (li + 1) % lines.length;
-      wait = 320;                                // 换句前的短停
+      wait = 420;                                // 换句前的短停
     } else if (deleting) {
-      wait = 16;                                 // 删除速度与打字速度分开，快得多
+      wait = 32;                                 // 比打字快，但不至于一闪而过
     } else {
-      wait = isAscii ? 42 : 78;
+      wait = isAscii ? 62 : 150;                 // 中文放慢，英文稍快
     }
     setTimeout(tick, wait);
   }
