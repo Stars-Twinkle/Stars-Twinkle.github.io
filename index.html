@@ -577,8 +577,18 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .md-body p { margin: 10px 0; }
 .md-body ul, .md-body ol { margin: 10px 0; padding-left: 22px; }
 .md-body li { margin: 4px 0; }
-.md-body a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--ring); }
-.md-body a:hover { border-bottom-color: var(--accent); }
+.md-body a {
+  color: var(--accent);
+  text-decoration: none;
+  padding-bottom: 1px;
+  /* 悬浮时渐变下划线从左往右展开 */
+  background-image: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size .38s cubic-bezier(.2, .7, .3, 1), color .25s ease;
+}
+.md-body a:hover { color: var(--text); background-size: 100% 2px; }
 .md-body strong { color: var(--text); }
 .md-body code {
   font-family: "Cascadia Code", Consolas, monospace;
@@ -897,8 +907,13 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  background-image: linear-gradient(90deg, var(--accent-2), var(--accent));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size .38s cubic-bezier(.2, .7, .3, 1);
 }
-.art-link:hover { text-decoration: underline; }
+.art-link:hover { background-size: 100% 2px; }
 .art-link::after { content: "↗"; font-size: 12px; opacity: .7; }
 .art-cat { color: var(--muted); }
 .art-state { font-size: 13px; }
@@ -2355,6 +2370,136 @@ document.getElementById('year').textContent = new Date().getFullYear();
       })
       .catch(function () { /* 文件不存在时忽略 */ });
   }
+})();
+
+/* ---------- Markdown 编辑器增强：自动配对 / 包裹 / 列表续行 ---------- */
+(function () {
+  var PAIRS = { '(': ')', '[': ']', '{': '}', '$': '$', '`': '`' };
+  var CLOSERS = { ')': '(', ']': '[', '}': '{' };
+
+  function fire(el) {
+    var ev;
+    try { ev = new Event('input', { bubbles: true }); }
+    catch (e) { ev = document.createEvent('Event'); ev.initEvent('input', true, true); }
+    el.dispatchEvent(ev);
+  }
+  function setSel(el, a, b) {
+    el.selectionStart = a;
+    el.selectionEnd = (b === undefined ? a : b);
+  }
+  /* 用一对符号包住选中内容；没选中就插一对并把光标放中间 */
+  function wrap(el, open, close) {
+    var s = el.selectionStart, e = el.selectionEnd, v = el.value;
+    var sel = v.slice(s, e);
+    el.value = v.slice(0, s) + open + sel + close + v.slice(e);
+    if (sel) setSel(el, s + open.length, s + open.length + sel.length);
+    else setSel(el, s + open.length);
+    fire(el);
+  }
+
+  function enhance(ta) {
+    if (!ta || ta.dataset.enhanced === '1') return;
+    ta.dataset.enhanced = '1';
+
+    ta.addEventListener('keydown', function (ev) {
+      var mod = ev.ctrlKey || ev.metaKey;
+
+      // Ctrl/Cmd + B 加粗、I 斜体、E 行内代码、K 链接
+      if (mod && !ev.shiftKey && !ev.altKey) {
+        var k = (ev.key || '').toLowerCase();
+        if (k === 'b') { ev.preventDefault(); wrap(ta, '**', '**'); return; }
+        if (k === 'i') { ev.preventDefault(); wrap(ta, '*', '*'); return; }
+        if (k === 'e') { ev.preventDefault(); wrap(ta, '`', '`'); return; }
+        if (k === 'k') {
+          ev.preventDefault();
+          wrap(ta, '[', '](https://)');
+          return;
+        }
+        return;
+      }
+      if (mod || ev.altKey) return;
+
+      var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+      var key = ev.key;
+
+      // 选中内容 + 输入左符号 → 直接包裹
+      if (s !== e && PAIRS[key]) {
+        ev.preventDefault();
+        var sel = v.slice(s, e);
+        ta.value = v.slice(0, s) + key + sel + PAIRS[key] + v.slice(e);
+        setSel(ta, s + 1, s + 1 + sel.length);
+        fire(ta);
+        return;
+      }
+
+      // 输入右符号、后面正好是它 → 跳过去，不重复插入
+      if (s === e && CLOSERS[key] && v.charAt(s) === key) {
+        ev.preventDefault();
+        setSel(ta, s + 1);
+        return;
+      }
+
+      // 输入左符号 → 自动补上另一半
+      if (s === e && PAIRS[key]) {
+        if ((key === '$' || key === '`') && v.charAt(s) === key) {
+          ev.preventDefault();          // 连续输入同一个符号时当作闭合
+          setSel(ta, s + 1);
+          return;
+        }
+        ev.preventDefault();
+        ta.value = v.slice(0, s) + key + PAIRS[key] + v.slice(e);
+        setSel(ta, s + 1);
+        fire(ta);
+        return;
+      }
+
+      // Backspace 在空的一对符号中间 → 一起删掉
+      if (key === 'Backspace' && s === e && s > 0) {
+        var prev = v.charAt(s - 1), next = v.charAt(s);
+        if (PAIRS[prev] === next) {
+          ev.preventDefault();
+          ta.value = v.slice(0, s - 1) + v.slice(s + 1);
+          setSel(ta, s - 1);
+          fire(ta);
+          return;
+        }
+      }
+
+      // Enter：列表 / 任务列表自动续行；空列表项则结束列表
+      if (key === 'Enter' && !ev.shiftKey && s === e) {
+        var lineStart = v.lastIndexOf('\n', s - 1) + 1;
+        var line = v.slice(lineStart, s);
+        var m = /^(\s*)(?:([-*+])|(\d+)([.)]))\s+(?:\[[ xX]\]\s+)?/.exec(line);
+        if (m) {
+          ev.preventDefault();
+          if (!line.slice(m[0].length).trim()) {          // 空项 → 清掉前缀跳出列表
+            ta.value = v.slice(0, lineStart) + v.slice(s);
+            setSel(ta, lineStart);
+          } else {
+            var task = /^\s*(?:[-*+]|\d+[.)])\s+\[[ xX]\]\s+/.test(line) ? '[ ] ' : '';
+            var prefix = m[3] ? (parseInt(m[3], 10) + 1) + m[4] + ' ' : (m[2] || '-') + ' ';
+            var ins = '\n' + m[1] + prefix + task;
+            ta.value = v.slice(0, s) + ins + v.slice(e);
+            setSel(ta, s + ins.length);
+          }
+          fire(ta);
+          return;
+        }
+      }
+
+      // Tab：插入两个空格（不跳出输入框）
+      if (key === 'Tab' && !ev.shiftKey) {
+        ev.preventDefault();
+        ta.value = v.slice(0, s) + '  ' + v.slice(e);
+        setSel(ta, s + 2);
+        fire(ta);
+      }
+    });
+  }
+
+  ['admin-md', 'admin-art-md'].forEach(function (id) {
+    enhance(document.getElementById(id));
+  });
 })();
 
 /* ---------- 后台（页面无入口，访问 #admin 才会出现） ---------- */
