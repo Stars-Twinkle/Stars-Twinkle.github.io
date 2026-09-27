@@ -12,5 +12,12 @@
     "body": "[rt](https://www.luogu.com.cn/team/134366)",
     "date": "2026-09-26",
     "ts": 1790410505232
+  },
+  {
+    "id": "n1790474946005",
+    "title": "B4575 [GESP202609 二级] 直角三角形 题解",
+    "body": "### 题意简述\n\n给定三项正实数 $a$（第 1 项）、$b$（第 2 项）、$L$（上限），且保证 $a<b$。数列定义为\n\n$$\nf_1=a,f_2=b,f_n=\\sqrt{f_{n-1}^2+f_{n-2}^2}(n\\ge 3).\n$$\n\n求最小的 $n$，使 $f_n>L$（注意是**严格超过**，等于不算超过）。\n\n样例：$3,4$ 出发得到 $5,\\,6.403124,\\,8.124038,\\,10.344080\\,\\dots$，上限 $10$。前 5 项都不超过 $10$，第 6 项 $10.344080>10$，故答案是 $6$。\n\n### 解法与复杂度\n\n不需要任何数学技巧，直接**递推模拟**即可。关键在于评估迭代次数上界，确认不会超时。\n\n设相邻项比值 $r_n=f_n/f_{n-1}\\to r$，则有\n\n$$\nr=\\sqrt{1+\\frac1{r^2}}\\;\\Longrightarrow\\; r^3=r^2+1\\;\\Longrightarrow\\;r\\approx 1.4656 .\n$$\n\n也就是说数列大致按公比 $1.4656$ 的指数速度增长，从不超过 $10^4$ 的初值涨到 $10^4$ 的上限只需几十项；即便初值取最小正数、上限取 $10000$，项数也在 $O(\\log L)$ 级别（远小于 $100$）。所以\n\n- 时间复杂度：$O(\\text{项数})=O(\\log L)$，常数极小；\n- 空间复杂度：$O(1)$（只用两个滚动变量保存相邻两项）。\n:::success[代码]\n**第 1 段：头文件**\n\n```cpp\n#include<bits/stdc++.h>\n```\n\n引入标准库总头，并使用既有的无逻辑作用模式宏，与原文件保持一致。\n\n**第 2 段：读入三项浮点数**\n\n```cpp\nsigned main(){\n    double a,b,mx;\n    scanf(\"%lf%lf%lf\",&a,&b,&mx);\n```\n\n`scanf` 的 `%lf` 会自动跳过空白符（含换行），因此三行输入可以一次性读入，无需逐行处理。\n\n**第 3 段：第 1 项就超限的特判**\n\n```cpp\n    if(a>mx){\n        printf(\"1\");\n        return 0;\n    }\n```\n\n第 1 项直接超过上限时，答案就是 $1$，无需进入递推。\n\n**第 4 段：滚动递推主体**\n\n```cpp\n    double sl=a,sr=b;\n    int ans=2;\n    while(sr<=mx){\n        ans++;\n        double mid=sr;\n        sr=std::sqrt(sl*sl+mid*mid);\n        sl=mid;\n    }\n```\n\n`sl` 恒为第 `ans-1` 项、`sr` 恒为第 `ans` 项，`ans` 初值为 $2$。循环条件 `sr<=mx` 表示\"第 `ans` 项尚未超过上限\"，于是把 `ans` 加一，并用 `mid` 暂存旧的 `sr`，算出新的 `sr=sqrt(sl^2+mid^2)`、令 `sl=mid`，完成一次向前滚动。循环退出时，`sr` 恰好是第一个 $>L$ 的项，其下标就是 `ans`。这里的 `<=`  等号情形（恰好等于上限）按题意**不算**超过，必须继续往后算。\n\n**第 5 段：输出与结束**\n\n```cpp\n    printf(\"%d\",ans);\n    return 0;\n}\n```\n\n输出项号，正常返回。\n:::success[[AC](https://www.luogu.com.cn/record/298037588) Code]\n```cpp line-numbers\n#include<bits/stdc++.h>\n#define Gorabbit God\nsigned main(){\n    double a,b,mx;\n    scanf(\"%lf%lf%lf\",&a,&b,&mx);\n    if(a>mx){\n        printf(\"1\");\n        return 0;\n    }\n    double sl=a,sr=b;\n    int ans=2;\n    while(sr<=mx){\n        ans++;\n        double mid=sr;\n        sr=std::sqrt(sl*sl+mid*mid);\n        sl=mid;\n    }\n    printf(\"%d\",ans);\n    return 0;\n}\n```\n:::",
+    "date": "2026-09-27",
+    "ts": 1790474946005
   }
 ]
