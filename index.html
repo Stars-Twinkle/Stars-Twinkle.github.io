@@ -252,6 +252,19 @@ nav a:hover { color: var(--text); background: var(--card); }
   box-shadow: 0 1px 3px rgba(20, 22, 40, .14);
 }
 #view-articles { padding: clamp(38px, 6vw, 72px) 0; }
+
+/* 首页 / 文章 切换过渡 */
+#view-home, #view-articles { will-change: opacity, transform; }
+.view-out {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .14s ease, transform .14s ease;
+}
+.view-in { animation: viewIn .36s cubic-bezier(.2, .7, .3, 1); }
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
 #view-articles .art-table {
   background: var(--card);
   border: 1px solid var(--border);
@@ -2432,19 +2445,43 @@ document.getElementById('year').textContent = new Date().getFullYear();
     renderDetail(id);
   }
 
+  var swapTimer = 0;
   function route() {
     var h = location.hash.replace(/^#\/?/, '');
     var m = /^article\/(.+)$/.exec(h);
     var isArt = (h === 'articles' || !!m);
     var home = document.getElementById('view-home');
-    if (home) home.hidden = isArt;
-    page.hidden = !isArt;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // 顶栏高亮立刻跟随，不等待动画
     document.getElementById('seg-home').classList.toggle('is-active', !isArt);
     document.getElementById('seg-articles').classList.toggle('is-active', isArt);
-    if (isArt) {
-      if (m) showDetail(decodeURIComponent(m[1])); else showList();
-      window.scrollTo(0, 0);
+
+    var target = isArt ? page : home;
+    var current = (isArt ? home : page);
+
+    function apply() {
+      if (home) home.hidden = isArt;
+      page.hidden = !isArt;
+      if (isArt) {
+        if (m) showDetail(decodeURIComponent(m[1])); else showList();
+        window.scrollTo(0, 0);
+      }
+      if (target && !reduce) {          // 新视图淡入上浮
+        target.classList.remove('view-in');
+        void target.offsetWidth;        // 强制回流，让动画能重复播放
+        target.classList.add('view-in');
+      }
     }
+
+    clearTimeout(swapTimer);
+    // 旧视图先淡出一点再切换
+    if (!current || current.hidden || reduce) { apply(); return; }
+    current.classList.add('view-out');
+    swapTimer = setTimeout(function () {
+      current.classList.remove('view-out');
+      apply();
+    }, 140);
   }
 
   document.getElementById('art-back').addEventListener('click', function () { location.hash = '#articles'; });
