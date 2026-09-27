@@ -9,6 +9,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+<link id="hljs-dark" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark-dimmed.min.css">
+<link id="hljs-light" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github.min.css" disabled>
 <meta property="og:type" content="website">
 <meta property="og:title" content="StarsTwinkle 的小窝">
 <meta property="og:description" content="StarsTwinkle 的个人主页。">
@@ -541,16 +543,46 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   background: var(--accent-soft);
   color: var(--text);
 }
-.md-body pre {
-  margin: 12px 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  overflow-x: auto;
-  background: rgba(0, 0, 0, .28);
+/* 代码块（含行号） */
+.md-code {
+  margin: 14px 0;
   border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .34);
+  overflow: hidden;
 }
-[data-theme="light"] .md-body pre { background: rgba(20, 22, 40, .05); }
-.md-body pre code { background: none; padding: 0; color: inherit; }
+[data-theme="light"] .md-code { background: #f6f8fa; }
+.md-body .md-code pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow-x: auto;
+}
+.md-body .md-code pre code {
+  display: block;
+  padding: 14px 16px;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.65;
+  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+}
+.md-code.has-ln { display: flex; align-items: stretch; }
+.md-ln {
+  flex: 0 0 auto;
+  padding: 14px 10px;
+  text-align: right;
+  color: var(--muted);
+  opacity: .55;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  user-select: none;
+  border-right: 1px solid var(--border);
+}
+.md-code.has-ln pre { flex: 1 1 auto; min-width: 0; }
 .md-body blockquote {
   margin: 12px 0;
   padding: 6px 16px;
@@ -577,6 +609,109 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   border-radius: 6px;
   background: var(--accent-soft);
   color: var(--text);
+}
+
+/* 图片 */
+.md-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 6px 0;
+}
+
+/* 表格 */
+.md-table-wrap { margin: 14px 0; overflow-x: auto; }
+.md-body table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+.md-body th, .md-body td { border: 1px solid var(--border); padding: 8px 12px; }
+.md-body th { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.md-body tbody tr:nth-child(even) { background: rgba(255, 255, 255, .022); }
+[data-theme="light"] .md-body tbody tr:nth-child(even) { background: rgba(20, 22, 40, .025); }
+
+/* 任务列表 */
+.md-body .md-tasks { list-style: none; padding-left: 4px; }
+.md-body .md-task { display: flex; align-items: flex-start; gap: 8px; }
+.md-body .md-task input { margin: .4em 0 0; accent-color: var(--accent); }
+.md-body .md-task.is-done { opacity: .6; text-decoration: line-through; }
+
+/* 嵌套引用 */
+.md-body blockquote blockquote { margin: 8px 0; }
+
+/* 折叠框 */
+.md-callout {
+  margin: 14px 0;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+.md-callout > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.md-callout > summary::-webkit-details-marker { display: none; }
+.md-callout > summary::before { content: "▸"; font-size: 12px; transition: transform .2s; }
+.md-callout[open] > summary::before { transform: rotate(90deg); }
+.md-callout-body { padding: 0 14px 12px; }
+.md-callout-info { border-left-color: #4f9cf0; }
+.md-callout-info > summary::before { color: #4f9cf0; }
+.md-callout-success { border-left-color: #3f9d5a; }
+.md-callout-success > summary::before { color: #3f9d5a; }
+.md-callout-warning { border-left-color: #e0a92c; }
+.md-callout-warning > summary::before { color: #e0a92c; }
+.md-callout-error { border-left-color: #e05c5c; }
+.md-callout-error > summary::before { color: #e05c5c; }
+
+/* 居中 / 居右 */
+.md-align { margin: 14px 0; }
+.md-align-center { text-align: center; }
+.md-align-right { text-align: right; }
+.md-align p { margin: 6px 0; }
+
+/* 引言 */
+.md-epigraph {
+  margin: 16px 0;
+  padding: 10px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 10px 10px 0;
+  font-style: italic;
+}
+.md-epigraph cite {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 长公告折叠 */
+.notice-toggle {
+  margin-top: 14px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--accent);
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+}
+.notice-toggle:hover { background: var(--card-hover); transform: translateY(-1px); }
+.notice.is-clamped .md-body {
+  max-height: 420px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 74%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 74%, transparent 100%);
 }
 
 /* ============ 后台（默认隐藏） ============ */
@@ -1015,7 +1150,8 @@ footer a { color: var(--accent); text-decoration: none; }
   </div>
 </div>
 
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" onload="(window.__katexQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" onload="(window.__renderQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js" onload="(window.__renderQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
 <script>
 /* ---------- 背景装饰点 ---------- */
 (function () {
@@ -1350,13 +1486,23 @@ footer a { color: var(--accent); text-decoration: none; }
     meta.setAttribute('content',
       document.documentElement.getAttribute('data-theme') === 'dark' ? '#070a14' : '#f6f4f0');
   }
+  /* 代码高亮的明暗配色跟着一起切 */
+  function syncHljs() {
+    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    var d = document.getElementById('hljs-dark');
+    var l = document.getElementById('hljs-light');
+    if (d) d.disabled = !dark;
+    if (l) l.disabled = dark;
+  }
   syncMeta();
+  syncHljs();
   if (!btn) return;
   btn.addEventListener('click', function () {
     var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem('st-theme', next); } catch (e) {}
     syncMeta();
+    syncHljs();
   });
 })();
 
@@ -1411,99 +1557,281 @@ document.getElementById('year').textContent = new Date().getFullYear();
       esc((display ? '$$' : '$') + tex + (display ? '$$' : '$')) + '</span>';
   }
 
-  /* 行内解析：先把代码与公式摘出来保护好，套完 Markdown 再还原 */
+  /* 行内解析：先摘出代码/公式/图片/链接等，套完 Markdown 再还原 */
   function inline(s) {
-    var codes = [], maths = [];
-    s = String(s == null ? '' : s)
-      // 1. 行内代码先摘走，免得里面的 $ 被当成公式
-      .replace(/`([^`]+)`/g, function (m, c) {
-        codes.push(c);
-        return '\u0001C' + (codes.length - 1) + '\u0001';
-      })
-      // 2. 行内公式：\[ ... \]、\( ... \) 与 $ ... $
-      .replace(/\\\[([\s\S]+?)\\\]/g, function (m, t) {
-        maths.push({ tex: t, display: true });
-        return '\u0001M' + (maths.length - 1) + '\u0001';
-      })
-      .replace(/\\\(([\s\S]+?)\\\)/g, function (m, t) {
-        maths.push({ tex: t, display: false });
-        return '\u0001M' + (maths.length - 1) + '\u0001';
-      })
-      .replace(/\$([^$\n]+?)\$/g, function (m, t) {
-        maths.push({ tex: t, display: false });
-        return '\u0001M' + (maths.length - 1) + '\u0001';
+    var codes = [], maths = [], imgs = [], links = [], autos = [], escs = [];
+    var S = String(s == null ? '' : s);
+
+    // 1) 反斜杠转义：\* \_ \` 等先抽走，免得被当成语法
+    S = S.replace(/\\([\\`*_{}\[\]()#+\-.!~|<>$])/g, function (m, ch) {
+      escs.push(ch);
+      return '\u0001E' + (escs.length - 1) + '\u0001';
+    });
+
+    // 2) 行内代码（支持一个或多个反引号）
+    S = S.replace(/(`+)([\s\S]*?)\1/g, function (m, tick, c) {
+      codes.push(c.replace(/^ ([\s\S]*) $/, '$1'));
+      return '\u0001C' + (codes.length - 1) + '\u0001';
+    });
+
+    // 3) 公式：\[..\]、\(..\)、$..$
+    S = S.replace(/\\\[([\s\S]+?)\\\]/g, function (m, t) {
+      maths.push({ tex: t, display: true });
+      return '\u0001M' + (maths.length - 1) + '\u0001';
+    }).replace(/\\\(([\s\S]+?)\\\)/g, function (m, t) {
+      maths.push({ tex: t, display: false });
+      return '\u0001M' + (maths.length - 1) + '\u0001';
+    }).replace(/\$([^$\n]+?)\$/g, function (m, t) {
+      maths.push({ tex: t, display: false });
+      return '\u0001M' + (maths.length - 1) + '\u0001';
+    });
+
+    // 4) 图片（必须早于链接，否则 ![...] 会被链接规则吃掉）
+    S = S.replace(/!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+["']([^"']*)["'])?\s*\)/g,
+      function (m, alt, url, title) {
+        imgs.push({ alt: alt, url: url, title: title || '' });
+        return '\u0001I' + (imgs.length - 1) + '\u0001';
       });
 
-    // 3. 常规 Markdown（此时文本里已没有 $ 和反引号内容）
-    s = esc(s)
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
-        return /^(https?:|mailto:|#|\/)/i.test(u)
-          ? '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + t + '</a>'
-          : t;
+    // 5) 链接（支持可选 title）
+    S = S.replace(/\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+["']([^"']*)["'])?\s*\)/g,
+      function (m, text, url, title) {
+        links.push({ text: text, url: url, title: title || '' });
+        return '\u0001L' + (links.length - 1) + '\u0001';
       });
 
-    // 4. 还原公式与代码
-    s = s.replace(/\u0001M(\d+)\u0001/g, function (m, i) {
+    // 6) 自动链接 <https://...>
+    S = S.replace(/<((?:https?|mailto):[^>\s]+)>/g, function (m, url) {
+      autos.push(url);
+      return '\u0001A' + (autos.length - 1) + '\u0001';
+    });
+
+    // 7) 剩下的文本做 HTML 转义
+    S = esc(S);
+
+    // 8) 强调：** __ * _ ~~
+    S = S.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+         .replace(/__([^_\n]+)__/g, '<strong>$1</strong>')
+         .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+         .replace(/(^|[^\w])_([^_\n]+)_(?=[^\w]|$)/g, '$1<em>$2</em>')
+         .replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+
+    // 9) 还原各类占位符
+    S = S.replace(/\u0001I(\d+)\u0001/g, function (m, i) {
+      var o = imgs[i];
+      if (!/^(https?:|data:image\/|\.{0,2}\/)/i.test(o.url)) {
+        return esc('![' + o.alt + '](' + o.url + ')');
+      }
+      return '<img src="' + esc(o.url) + '" alt="' + esc(o.alt) + '"' +
+        (o.title ? ' title="' + esc(o.title) + '"' : '') + ' loading="lazy">';
+    });
+    S = S.replace(/\u0001L(\d+)\u0001/g, function (m, i) {
+      var o = links[i];
+      var label = esc(o.text)
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      if (!/^(https?:|mailto:|#|\/|\.{0,2}\/)/i.test(o.url)) return label;
+      return '<a href="' + esc(o.url) + '"' + (o.title ? ' title="' + esc(o.title) + '"' : '') +
+        ' target="_blank" rel="noopener noreferrer">' + label + '</a>';
+    });
+    S = S.replace(/\u0001A(\d+)\u0001/g, function (m, i) {
+      var u = autos[i];
+      return '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' +
+        esc(u.replace(/^mailto:/, '')) + '</a>';
+    });
+    S = S.replace(/\u0001M(\d+)\u0001/g, function (m, i) {
       return renderMath(maths[i].tex, maths[i].display);
     });
-    s = s.replace(/\u0001C(\d+)\u0001/g, function (m, i) { return '<code>' + esc(codes[i]) + '</code>'; });
-    return s;
+    S = S.replace(/\u0001C(\d+)\u0001/g, function (m, i) {
+      return '<code>' + esc(codes[i]) + '</code>';
+    });
+    S = S.replace(/\u0001E(\d+)\u0001/g, function (m, i) { return esc(escs[i]); });
+
+    // 10) 段落内换行：行末两个空格或一个反斜线；其余换行视作空格
+    S = S.replace(/ {2,}\n/g, '\u0001X\u0001')
+         .replace(/\\\n/g, '\u0001X\u0001')
+         .replace(/\n/g, ' ')
+         .replace(/\u0001X\u0001/g, '<br>');
+    return S;
   }
 
-  /* 轻量 Markdown：标题 / 粗斜体 / 删除线 / 行内代码 / 代码块 / 列表 / 引用 / 分割线 / 链接 */
-  function md(src) {
-    var lines = String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n');
+  /* ---------- 块级解析（对齐洛谷 Markdown 语法手册） ---------- */
+  var LANG_ALIAS = { 'c++': 'cpp', 'c#': 'csharp', 'py': 'python', 'js': 'javascript', 'ts': 'typescript', 'pas': 'pascal' };
+
+  function codeBlockHTML(lang, flags, code) {
+    var l = (lang || '').toLowerCase();
+    l = LANG_ALIAS[l] || l || 'cpp';          // 洛谷：未指定语言时按 C++ 高亮
+    var body = '<pre><code class="language-' + esc(l) + '">' + esc(code) + '</code></pre>';
+    if (!/\bline-numbers\b/.test(flags)) return '<div class="md-code">' + body + '</div>';
+    var total = code.split('\n').length, nums = [];
+    for (var k = 1; k <= total; k++) nums.push(k);
+    return '<div class="md-code has-ln"><div class="md-ln" aria-hidden="true">' +
+      nums.join('<br>') + '</div>' + body + '</div>';
+  }
+
+  function isTableSep(line) {
+    return /\|/.test(line) && /^[\s:|-]+$/.test(line) && /-/.test(line);
+  }
+  function splitRow(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|')
+      .map(function (c) { return c.trim(); });
+  }
+
+  function renderContainer(type, title, opts, rawBody) {
+    var inner = parseBlocks(rawBody.split('\n'));
+    if (type === 'align') {
+      var al = /center/.test(opts) ? 'center' : 'right';
+      return '<div class="md-align md-align-' + al + '">' + inner + '</div>';
+    }
+    if (type === 'epigraph') {
+      return '<blockquote class="md-epigraph">' + inner +
+        (title ? '<cite>' + inline(title) + '</cite>' : '') + '</blockquote>';
+    }
+    var names = { info: '提示', success: '成功', warning: '警告', error: '错误',
+                  note: '注意', tip: '小技巧', important: '重要', caution: '当心' };
+    if (names[type]) {
+      return '<details class="md-callout md-callout-' + type + '"' +
+        (/\{open\}/.test(opts) ? ' open' : '') + '>' +
+        '<summary>' + (title ? inline(title) : names[type]) + '</summary>' +
+        '<div class="md-callout-body">' + inner + '</div></details>';
+    }
+    return inner;                             // 未知容器只渲染内部
+  }
+
+  function isBlockStart(l) {
+    return /^\s*$/.test(l) ||
+      /^\s*(`{3,}|~{3,})/.test(l) ||
+      /^\s*:{3,}\s*[a-zA-Z]/.test(l) ||
+      /^#{1,6}\s/.test(l) ||
+      /^\s*>/.test(l) ||
+      /^\s*([-*+]|\d+[.)])\s+/.test(l) ||
+      /^\s*([-*_])(\s*\1){2,}\s*$/.test(l) ||
+      /^\s*\$\$/.test(l) ||
+      /^\s*\\\[/.test(l);
+  }
+
+  function parseBlocks(lines) {
     var out = [], i = 0;
     while (i < lines.length) {
       var line = lines[i];
-      if (/^\s*```/.test(line)) {
+
+      // 围栏代码块：``` 或 ~~~，可带语言与参数
+      var fm = /^\s*(`{3,}|~{3,})\s*(.*)$/.exec(line);
+      if (fm) {
+        var mark = fm[1][0];
+        var info = fm[2].trim();
+        var closeRe = new RegExp('^\\s*\\' + mark + '{3,}\\s*$');
         var buf = [];
         i++;
-        while (i < lines.length && !/^\s*```/.test(lines[i])) { buf.push(lines[i]); i++; }
+        while (i < lines.length && !closeRe.test(lines[i])) { buf.push(lines[i]); i++; }
         i++;
-        out.push('<pre><code>' + esc(buf.join('\n')) + '</code></pre>');
+        var parts = info.split(/\s+/);
+        out.push(codeBlockHTML(parts[0], parts.slice(1).join(' '), buf.join('\n')));
         continue;
       }
+
+      // 容器：:::info[标题]{open} / :::align{center} / :::epigraph[来源]
+      var cm = /^\s*(:{3,})([a-zA-Z][\w-]*)(?:\[([\s\S]*?)\])?(\{[^}]*\})?\s*$/.exec(line);
+      if (cm) {
+        var endRe = new RegExp('^\\s*:{' + cm[1].length + '}\\s*$');
+        var cbody = [];
+        i++;
+        while (i < lines.length && !endRe.test(lines[i])) { cbody.push(lines[i]); i++; }
+        if (i < lines.length) i++;
+        out.push(renderContainer(cm[2].toLowerCase(), cm[3] || '', cm[4] || '', cbody.join('\n')));
+        continue;
+      }
+
       if (/^\s*$/.test(line)) { i++; continue; }
-      // 块级公式：$$ ... $$ 或 \[ ... \]（可跨多行）
+
+      // 块级公式
       var isDollar = /^\s*\$\$/.test(line);
       var isBracket = /^\s*\\\[/.test(line);
       if (isDollar || isBracket) {
-        var endRe = isDollar ? /\$\$\s*$/ : /\\\]\s*$/;
+        var mEnd = isDollar ? /\$\$\s*$/ : /\\\]\s*$/;
         var rest = isDollar ? line.replace(/^\s*\$\$/, '') : line.replace(/^\s*\\\[/, '');
         var acc = [];
-        if (endRe.test(rest)) {
-          acc.push(rest.replace(endRe, ''));
+        if (mEnd.test(rest)) {
+          acc.push(rest.replace(mEnd, ''));
           i++;
         } else {
           acc.push(rest);
           i++;
-          while (i < lines.length && !endRe.test(lines[i])) { acc.push(lines[i]); i++; }
-          if (i < lines.length) { acc.push(lines[i].replace(endRe, '')); i++; }
+          while (i < lines.length && !mEnd.test(lines[i])) { acc.push(lines[i]); i++; }
+          if (i < lines.length) { acc.push(lines[i].replace(mEnd, '')); i++; }
         }
         out.push('<div class="math-block">' + renderMath(acc.join('\n').trim(), true) + '</div>');
         continue;
       }
-      var h = /^(#{1,6})\s+(.*)$/.exec(line);
-      if (h) {
-        var lv = h[1].length;
-        out.push('<h' + lv + '>' + inline(h[2]) + '</h' + lv + '>');
+
+      // 标题
+      var hm = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
+      if (hm) {
+        var lv = hm[1].length;
+        out.push('<h' + lv + '>' + inline(hm[2]) + '</h' + lv + '>');
         i++;
         continue;
       }
-      if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(line)) { out.push('<hr>'); i++; continue; }
-      if (/^\s*>\s?/.test(line)) {
+
+      // 分隔线
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+      // 引用（内容递归解析，支持嵌套）
+      if (/^\s*>/.test(line)) {
         var q = [];
-        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+        while (i < lines.length && /^\s*>/.test(lines[i])) {
           q.push(lines[i].replace(/^\s*>\s?/, ''));
           i++;
         }
-        out.push('<blockquote>' + inline(q.join(' ')) + '</blockquote>');
+        out.push('<blockquote>' + parseBlocks(q) + '</blockquote>');
         continue;
       }
+
+      // 表格（下一行是对齐分隔行）
+      if (/\|/.test(line) && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        var head = splitRow(line);
+        var aligns = splitRow(lines[i + 1]).map(function (c) {
+          var l = /^:/.test(c), r = /:$/.test(c);
+          return (l && r) ? 'center' : (r ? 'right' : (l ? 'left' : ''));
+        });
+        i += 2;
+        var rows = [];
+        while (i < lines.length && /\|/.test(lines[i]) && !/^\s*$/.test(lines[i])) {
+          rows.push(splitRow(lines[i]));
+          i++;
+        }
+        var tb = '<div class="md-table-wrap"><table><thead><tr>';
+        head.forEach(function (c, k) {
+          tb += '<th' + (aligns[k] ? ' style="text-align:' + aligns[k] + '"' : '') + '>' + inline(c) + '</th>';
+        });
+        tb += '</tr></thead><tbody>';
+        rows.forEach(function (r) {
+          tb += '<tr>';
+          for (var k2 = 0; k2 < head.length; k2++) {
+            tb += '<td' + (aligns[k2] ? ' style="text-align:' + aligns[k2] + '"' : '') + '>' +
+              (r[k2] == null ? '' : inline(r[k2])) + '</td>';
+          }
+          tb += '</tr>';
+        });
+        out.push(tb + '</tbody></table></div>');
+        continue;
+      }
+
+      // 任务列表
+      if (/^\s*[-*+]\s+\[[ xX]\]\s+/.test(line)) {
+        var tl = [];
+        while (i < lines.length && /^\s*[-*+]\s+\[[ xX]\]\s+/.test(lines[i])) {
+          var done = /\[[xX]\]/.test(lines[i]);
+          tl.push('<li class="md-task' + (done ? ' is-done' : '') + '">' +
+            '<input type="checkbox" disabled' + (done ? ' checked' : '') + '>' +
+            inline(lines[i].replace(/^\s*[-*+]\s+\[[ xX]\]\s+/, '')) + '</li>');
+          i++;
+        }
+        out.push('<ul class="md-tasks">' + tl.join('') + '</ul>');
+        continue;
+      }
+
+      // 无序列表
       if (/^\s*[-*+]\s+/.test(line)) {
         var ul = [];
         while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
@@ -1513,6 +1841,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
         out.push('<ul>' + ul.join('') + '</ul>');
         continue;
       }
+
+      // 有序列表
       if (/^\s*\d+[.)]\s+/.test(line)) {
         var ol = [];
         while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) {
@@ -1522,16 +1852,22 @@ document.getElementById('year').textContent = new Date().getFullYear();
         out.push('<ol>' + ol.join('') + '</ol>');
         continue;
       }
+
+      // 段落
       var para = [line];
       i++;
-      while (i < lines.length && !/^\s*$/.test(lines[i]) &&
-             !/^(#{1,6}\s|```|\s*>|\s*[-*+]\s|\s*\d+[.)]\s|\s*\$\$|\s*\\\[)/.test(lines[i])) {
+      while (i < lines.length && !isBlockStart(lines[i]) &&
+             !(/\|/.test(lines[i]) && i + 1 < lines.length && isTableSep(lines[i + 1]))) {
         para.push(lines[i]);
         i++;
       }
-      out.push('<p>' + inline(para.join('\n')).replace(/\n/g, '<br>') + '</p>');
+      out.push('<p>' + inline(para.join('\n')) + '</p>');
     }
     return out.join('\n');
+  }
+
+  function md(src) {
+    return parseBlocks(String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n'));
   }
 
   function load() {
@@ -1563,7 +1899,47 @@ document.getElementById('year').textContent = new Date().getFullYear();
         '<div class="md-body">' + md(n.body) + '</div>' +
         '</article>';
     }).join('');
+    afterRender(box);
+  }
+
+  /* 代码高亮（highlight.js，幂等） */
+  function highlightAll(scope) {
+    if (!window.hljs) return;
+    var blocks = (scope || document).querySelectorAll('.md-body pre code');
+    Array.prototype.forEach.call(blocks, function (el) {
+      if (el.dataset.hl === '1') return;
+      el.dataset.hl = '1';
+      try { window.hljs.highlightElement(el); } catch (e) {}
+    });
+  }
+
+  /* 长公告自动折叠 */
+  var CLAMP_H = 420;
+  function setupClamp(scope) {
+    var cards = (scope || document).querySelectorAll('.notice');
+    Array.prototype.forEach.call(cards, function (card) {
+      if (card.dataset.clamped === '1') return;
+      card.dataset.clamped = '1';
+      var body = card.querySelector('.md-body');
+      if (!body || body.scrollHeight <= CLAMP_H + 80) return;
+      card.classList.add('is-clamped');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'notice-toggle';
+      btn.textContent = '展开全文';
+      btn.addEventListener('click', function () {
+        var folded = card.classList.toggle('is-clamped');
+        btn.textContent = folded ? '展开全文' : '收起';
+      });
+      card.appendChild(btn);
+    });
+  }
+
+  /* 渲染收尾：公式字体预热 + 代码高亮 + 折叠判断 */
+  function afterRender(scope) {
     warmupMathFonts();
+    highlightAll(scope);
+    setupClamp(scope);
   }
 
   /* 页面上出现公式时，主动把 KaTeX 的符号字体拉下来，
@@ -1577,11 +1953,12 @@ document.getElementById('year').textContent = new Date().getFullYear();
     });
   }
 
-  // KaTeX 异步加载完成后重渲一次，把公式换成排版结果
-  (window.__katexQueue = window.__katexQueue || []).push(render);
+  // 渲染库异步加载完成后重渲一次，把公式/代码高亮补上
+  (window.__renderQueue = window.__renderQueue || []).push(render);
 
   window.STNotices = {
-    md: md, esc: esc, load: load, save: persist, render: render, KEY: KEY, DEFAULT: DEFAULT
+    md: md, esc: esc, load: load, save: persist, render: render,
+    afterRender: afterRender, KEY: KEY, DEFAULT: DEFAULT
   };
   render();
 
@@ -1686,9 +2063,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function preview() {
     var html = API.md(mdEl.value);
     prevEl.innerHTML = html || '<p class="notice-empty">（预览）</p>';
+    if (API.afterRender) API.afterRender(prevEl);
   }
-  // KaTeX 加载完成后，编辑器预览也要重渲一次
-  (window.__katexQueue = window.__katexQueue || []).push(function () { preview(); });
+  // 渲染库加载完成后，编辑器预览也要重渲一次
+  (window.__renderQueue = window.__renderQueue || []).push(function () { preview(); });
 
   function edit(id) {
     var list = API.load();
