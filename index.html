@@ -1801,11 +1801,27 @@ footer a { color: var(--accent); text-decoration: none; }
 
   function tick() {
     var full = lines[li];
-    ci += deleting ? -1 : 1;
+    var isAscii = /^[\x20-\x7e]*$/.test(full);   // 纯英文句子打得更快
+    if (deleting) {
+      ci = Math.max(0, ci - 3);                  // 删除一次退三个字符
+    } else {
+      ci += 1;
+    }
     el.textContent = full.slice(0, ci);
-    var wait = deleting ? 45 : 105;
-    if (!deleting && ci === full.length) { deleting = true; wait = 1500; }
-    else if (deleting && ci === 0) { deleting = false; li = (li + 1) % lines.length; wait = 380; }
+
+    var wait;
+    if (!deleting && ci >= full.length) {
+      deleting = true;
+      wait = 1400;                               // 打完停顿
+    } else if (deleting && ci <= 0) {
+      deleting = false;
+      li = (li + 1) % lines.length;
+      wait = 320;                                // 换句前的短停
+    } else if (deleting) {
+      wait = 16;                                 // 删除速度与打字速度分开，快得多
+    } else {
+      wait = isAscii ? 42 : 78;
+    }
     setTimeout(tick, wait);
   }
   tick();
