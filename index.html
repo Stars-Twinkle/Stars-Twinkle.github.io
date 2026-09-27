@@ -1058,6 +1058,64 @@ select.admin-input { cursor: pointer; }
   45%  { background: rgba(255, 60, 60, .32); box-shadow: 0 0 0 4px rgba(255, 70, 70, .18); }
   100% { background: rgba(255, 70, 70, .16); box-shadow: 0 0 0 0 rgba(255, 70, 70, 0); }
 }
+
+/* 通行密钥正确：整个弹层闪绿 + 卡片染绿 */
+.admin-msg.ok { color: #6ee7a8; }
+.admin.ok { animation: admin-overlay-ok .85s ease-out; }
+@keyframes admin-overlay-ok {
+  0%   { background: rgba(22, 130, 78, .62); }
+  55%  { background: rgba(18, 92, 56, .30); }
+  100% { background: rgba(4, 6, 14, .72); }
+}
+[data-theme="light"] .admin.ok { animation: admin-overlay-ok-light .85s ease-out; }
+@keyframes admin-overlay-ok-light {
+  0%   { background: rgba(34, 170, 105, .5); }
+  55%  { background: rgba(40, 150, 100, .26); }
+  100% { background: rgba(30, 32, 45, .45); }
+}
+.admin-card.ok {
+  border-color: rgba(63, 200, 120, .85);
+  box-shadow: 0 0 0 1px rgba(63, 200, 120, .5), 0 0 46px rgba(40, 200, 110, .35), 0 30px 80px rgba(0, 0, 0, .5);
+  animation: admin-cardok 1.15s ease-out;
+}
+@keyframes admin-cardok {
+  0% {
+    border-color: rgba(60, 220, 130, 1);
+    background: rgba(40, 190, 110, .38);
+    box-shadow: 0 0 0 3px rgba(60, 220, 130, .55), 0 0 110px rgba(40, 200, 110, .55), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+  45% {
+    border-color: rgba(60, 210, 125, .95);
+    background: rgba(40, 190, 110, .16);
+    box-shadow: 0 0 0 2px rgba(60, 210, 125, .38), 0 0 60px rgba(40, 200, 110, .38), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+  100% {
+    border-color: rgba(63, 200, 120, .85);
+    background: var(--bg-2);
+    box-shadow: 0 0 0 1px rgba(63, 200, 120, .5), 0 0 46px rgba(40, 200, 110, .35), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+}
+.admin-input.ok {
+  border-color: #4ade80 !important;
+  background: rgba(60, 200, 120, .16);
+  animation: admin-okflash .95s ease-out;
+}
+@keyframes admin-okflash {
+  0%   { background: rgba(60, 210, 130, .55); box-shadow: 0 0 0 7px rgba(60, 210, 130, .28); }
+  45%  { background: rgba(60, 210, 130, .30); box-shadow: 0 0 0 4px rgba(60, 210, 130, .16); }
+  100% { background: rgba(60, 200, 120, .16); box-shadow: 0 0 0 0 rgba(60, 210, 130, 0); }
+}
+
+/* 登入成功后的渐变切场 */
+.admin-fade-out { animation: adminFadeOut .3s ease forwards; }
+@keyframes adminFadeOut {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+.admin-fade-in { animation: adminFadeIn .45s cubic-bezier(.2, .7, .3, 1); }
+@keyframes adminFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
 .admin-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
@@ -2913,6 +2971,25 @@ document.getElementById('year').textContent = new Date().getFullYear();
     msg.classList.remove('err');
   }
 
+  /* 密钥正确：整个弹层 + 卡片 + 输入框一起闪绿 */
+  function flashOk(text) {
+    msg.textContent = text;
+    msg.classList.remove('err');
+    msg.classList.add('ok');
+    var card = root.querySelector('.admin-card');
+    var els = [root, card, keyInput];
+    els.forEach(function (el) {
+      el.classList.remove('ok');
+      void el.offsetWidth;                     // 强制回流，让动画能重复播放
+      el.classList.add('ok');
+    });
+    clearTimeout(flashOk.timer);
+    flashOk.timer = setTimeout(function () {
+      els.forEach(function (el) { el.classList.remove('ok'); });
+      msg.classList.remove('ok');
+    }, 1600);
+  }
+
   function failAttempt() {
     tries++;
     keyInput.value = '';
@@ -2952,8 +3029,17 @@ document.getElementById('year').textContent = new Date().getFullYear();
       if (hex === PASS_SHA256) {
         tries = 0;
         try { sessionStorage.setItem(SESSION, '1'); } catch (e) {}
-        showMsg('');
-        open();
+        // 先给绿色成功反馈，停留一下再渐变进入后台
+        flashOk('通行密钥正确，正在进入后台…');
+        setTimeout(function () {
+          loginView.classList.add('admin-fade-out');
+          setTimeout(function () {
+            loginView.classList.remove('admin-fade-out');
+            open();
+            panel.classList.add('admin-fade-in');
+            setTimeout(function () { panel.classList.remove('admin-fade-in'); }, 520);
+          }, 300);
+        }, 620);
       } else {
         failAttempt();
       }
