@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#070a14">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
 <meta property="og:type" content="website">
 <meta property="og:title" content="StarsTwinkle 的小窝">
 <meta property="og:description" content="StarsTwinkle 的个人主页。">
@@ -560,6 +561,24 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .md-body hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
 .md-body del { opacity: .7; }
 
+/* LaTeX 公式 */
+.md-body .katex, .md-body .katex-display { color: var(--text); }
+.md-body .katex { font-size: 1.12em; }
+.math-block {
+  margin: 14px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.math-block .katex-display { margin: 0; }
+.math-raw {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: .92em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
 /* ============ 后台（默认隐藏） ============ */
 .admin {
   position: fixed;
@@ -996,6 +1015,7 @@ footer a { color: var(--accent); text-decoration: none; }
   </div>
 </div>
 
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" onload="(window.__katexQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
 <script>
 /* ---------- 背景装饰点 ---------- */
 (function () {
@@ -1375,9 +1395,47 @@ document.getElementById('year').textContent = new Date().getFullYear();
       .replace(/"/g, '&quot;');
   }
 
+  /* LaTeX：交给 KaTeX 渲染；若渲染库还没加载好，先原样显示公式源码 */
+  function renderMath(tex, display) {
+    if (window.katex && typeof window.katex.renderToString === 'function') {
+      try {
+        return window.katex.renderToString(tex, {
+          displayMode: !!display,
+          throwOnError: false,
+          output: 'html',
+          strict: false
+        });
+      } catch (e) { /* 渲染失败则走下面的兜底 */ }
+    }
+    return '<span class="math-raw" title="公式渲染库未就绪">' +
+      esc((display ? '$$' : '$') + tex + (display ? '$$' : '$')) + '</span>';
+  }
+
+  /* 行内解析：先把代码与公式摘出来保护好，套完 Markdown 再还原 */
   function inline(s) {
-    return esc(s)
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
+    var codes = [], maths = [];
+    s = String(s == null ? '' : s)
+      // 1. 行内代码先摘走，免得里面的 $ 被当成公式
+      .replace(/`([^`]+)`/g, function (m, c) {
+        codes.push(c);
+        return '\u0001C' + (codes.length - 1) + '\u0001';
+      })
+      // 2. 行内公式：\[ ... \]、\( ... \) 与 $ ... $
+      .replace(/\\\[([\s\S]+?)\\\]/g, function (m, t) {
+        maths.push({ tex: t, display: true });
+        return '\u0001M' + (maths.length - 1) + '\u0001';
+      })
+      .replace(/\\\(([\s\S]+?)\\\)/g, function (m, t) {
+        maths.push({ tex: t, display: false });
+        return '\u0001M' + (maths.length - 1) + '\u0001';
+      })
+      .replace(/\$([^$\n]+?)\$/g, function (m, t) {
+        maths.push({ tex: t, display: false });
+        return '\u0001M' + (maths.length - 1) + '\u0001';
+      });
+
+    // 3. 常规 Markdown（此时文本里已没有 $ 和反引号内容）
+    s = esc(s)
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
       .replace(/~~([^~]+)~~/g, '<del>$1</del>')
@@ -1386,6 +1444,13 @@ document.getElementById('year').textContent = new Date().getFullYear();
           ? '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + t + '</a>'
           : t;
       });
+
+    // 4. 还原公式与代码
+    s = s.replace(/\u0001M(\d+)\u0001/g, function (m, i) {
+      return renderMath(maths[i].tex, maths[i].display);
+    });
+    s = s.replace(/\u0001C(\d+)\u0001/g, function (m, i) { return '<code>' + esc(codes[i]) + '</code>'; });
+    return s;
   }
 
   /* 轻量 Markdown：标题 / 粗斜体 / 删除线 / 行内代码 / 代码块 / 列表 / 引用 / 分割线 / 链接 */
@@ -1403,6 +1468,25 @@ document.getElementById('year').textContent = new Date().getFullYear();
         continue;
       }
       if (/^\s*$/.test(line)) { i++; continue; }
+      // 块级公式：$$ ... $$ 或 \[ ... \]（可跨多行）
+      var isDollar = /^\s*\$\$/.test(line);
+      var isBracket = /^\s*\\\[/.test(line);
+      if (isDollar || isBracket) {
+        var endRe = isDollar ? /\$\$\s*$/ : /\\\]\s*$/;
+        var rest = isDollar ? line.replace(/^\s*\$\$/, '') : line.replace(/^\s*\\\[/, '');
+        var acc = [];
+        if (endRe.test(rest)) {
+          acc.push(rest.replace(endRe, ''));
+          i++;
+        } else {
+          acc.push(rest);
+          i++;
+          while (i < lines.length && !endRe.test(lines[i])) { acc.push(lines[i]); i++; }
+          if (i < lines.length) { acc.push(lines[i].replace(endRe, '')); i++; }
+        }
+        out.push('<div class="math-block">' + renderMath(acc.join('\n').trim(), true) + '</div>');
+        continue;
+      }
       var h = /^(#{1,6})\s+(.*)$/.exec(line);
       if (h) {
         var lv = h[1].length;
@@ -1441,7 +1525,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       var para = [line];
       i++;
       while (i < lines.length && !/^\s*$/.test(lines[i]) &&
-             !/^(#{1,6}\s|```|\s*>|\s*[-*+]\s|\s*\d+[.)]\s)/.test(lines[i])) {
+             !/^(#{1,6}\s|```|\s*>|\s*[-*+]\s|\s*\d+[.)]\s|\s*\$\$|\s*\\\[)/.test(lines[i])) {
         para.push(lines[i]);
         i++;
       }
@@ -1479,7 +1563,22 @@ document.getElementById('year').textContent = new Date().getFullYear();
         '<div class="md-body">' + md(n.body) + '</div>' +
         '</article>';
     }).join('');
+    warmupMathFonts();
   }
+
+  /* 页面上出现公式时，主动把 KaTeX 的符号字体拉下来，
+     否则浏览器要等到真正用到该符号才去下载，根号、大号求和这类符号会先缺一会儿 */
+  function warmupMathFonts() {
+    if (!window.katex || !document.fonts || !document.fonts.load) return;
+    var fams = ['KaTeX_Main', 'KaTeX_Math', 'KaTeX_Size1', 'KaTeX_Size2',
+                'KaTeX_Size3', 'KaTeX_Size4', 'KaTeX_AMS', 'KaTeX_Caligraphic'];
+    fams.forEach(function (f) {
+      try { document.fonts.load('16px "' + f + '"'); } catch (e) {}
+    });
+  }
+
+  // KaTeX 异步加载完成后重渲一次，把公式换成排版结果
+  (window.__katexQueue = window.__katexQueue || []).push(render);
 
   window.STNotices = {
     md: md, esc: esc, load: load, save: persist, render: render, KEY: KEY, DEFAULT: DEFAULT
@@ -1588,6 +1687,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     var html = API.md(mdEl.value);
     prevEl.innerHTML = html || '<p class="notice-empty">（预览）</p>';
   }
+  // KaTeX 加载完成后，编辑器预览也要重渲一次
+  (window.__katexQueue = window.__katexQueue || []).push(function () { preview(); });
 
   function edit(id) {
     var list = API.load();
