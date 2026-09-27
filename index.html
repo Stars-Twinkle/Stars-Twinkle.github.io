@@ -635,26 +635,60 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .admin-msg { min-height: 1.2em; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
 .admin-msg.err { color: #ff8a8a; }
 
-/* 通行密钥错误：登入窗口闪红并抖动 */
+/* 通行密钥错误：整个弹层闪红 + 卡片染红抖动 */
+.admin.error { animation: admin-overlay .8s ease-out; }
+@keyframes admin-overlay {
+  0%   { background: rgba(175, 25, 25, .70); }
+  55%  { background: rgba(120, 18, 18, .34); }
+  100% { background: rgba(4, 6, 14, .72); }
+}
+[data-theme="light"] .admin.error { animation: admin-overlay-light .8s ease-out; }
+@keyframes admin-overlay-light {
+  0%   { background: rgba(210, 40, 40, .55); }
+  55%  { background: rgba(180, 40, 40, .28); }
+  100% { background: rgba(30, 32, 45, .45); }
+}
+
 .admin-card.error {
-  border-color: rgba(255, 92, 92, .8);
-  box-shadow: 0 0 0 1px rgba(255, 92, 92, .45), 0 0 46px rgba(255, 70, 70, .32), 0 30px 80px rgba(0, 0, 0, .5);
-  animation: admin-shake .45s cubic-bezier(.36, .07, .19, .97);
+  border-color: rgba(255, 92, 92, .85);
+  box-shadow: 0 0 0 1px rgba(255, 92, 92, .5), 0 0 44px rgba(255, 70, 70, .34), 0 30px 80px rgba(0, 0, 0, .5);
+  animation:
+    admin-shake .5s cubic-bezier(.36, .07, .19, .97),
+    admin-cardflash 1.3s ease-out;
 }
 @keyframes admin-shake {
   0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-10px); }
-  40%      { transform: translateX(8px); }
-  60%      { transform: translateX(-5px); }
+  20%      { transform: translateX(-11px); }
+  40%      { transform: translateX(9px); }
+  60%      { transform: translateX(-6px); }
   80%      { transform: translateX(3px); }
 }
+@keyframes admin-cardflash {
+  0% {
+    border-color: rgba(255, 70, 70, 1);
+    background: rgba(255, 58, 58, .42);
+    box-shadow: 0 0 0 3px rgba(255, 80, 80, .6), 0 0 110px rgba(255, 40, 40, .6), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+  40% {
+    border-color: rgba(255, 80, 80, .95);
+    background: rgba(255, 58, 58, .2);
+    box-shadow: 0 0 0 2px rgba(255, 80, 80, .38), 0 0 60px rgba(255, 40, 40, .4), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+  100% {
+    border-color: rgba(255, 92, 92, .85);
+    background: var(--bg-2);
+    box-shadow: 0 0 0 1px rgba(255, 92, 92, .5), 0 0 44px rgba(255, 70, 70, .34), 0 30px 80px rgba(0, 0, 0, .5);
+  }
+}
 .admin-input.error {
-  border-color: rgba(255, 92, 92, .9) !important;
-  animation: admin-redflash .65s ease-out;
+  border-color: #ff6b6b !important;
+  background: rgba(255, 70, 70, .16);
+  animation: admin-redflash .95s ease-out;
 }
 @keyframes admin-redflash {
-  0%   { background: rgba(255, 70, 70, .40); box-shadow: 0 0 0 4px rgba(255, 70, 70, .18); }
-  100% { background: rgba(255, 70, 70, .05); box-shadow: 0 0 0 0 rgba(255, 70, 70, 0); }
+  0%   { background: rgba(255, 60, 60, .58); box-shadow: 0 0 0 7px rgba(255, 70, 70, .3); }
+  45%  { background: rgba(255, 60, 60, .32); box-shadow: 0 0 0 4px rgba(255, 70, 70, .18); }
+  100% { background: rgba(255, 70, 70, .16); box-shadow: 0 0 0 0 rgba(255, 70, 70, 0); }
 }
 .admin-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -1475,7 +1509,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
   if (!API || !root) return;
 
   // 通行密钥只以 SHA-256 哈希保存，源码里不出现明文
-  var PASS_SHA256 = 'b005d632b831214cac90f67dbbd743b9154810167551792a3f950f3b875f3024';
+  var PASS_SHA256 = '115a021e3c6f8a2cc0298d8f80cf7ca29745f08d8bbf6e070349afefef757bf6';
   var SESSION = 'st-admin-ok';
   var MAX_TRIES = 3;          // 连续错误几次后锁定
   var LOCK_SECONDS = 15;      // 锁定时长
@@ -1586,16 +1620,16 @@ document.getElementById('year').textContent = new Date().getFullYear();
     msg.textContent = text;
     msg.classList.add('err');
     var card = root.querySelector('.admin-card');
-    [card, keyInput].forEach(function (el) {
+    var els = [root, card, keyInput];        // 整个弹层 + 卡片 + 输入框一起闪红
+    els.forEach(function (el) {
       el.classList.remove('error');
-      void el.offsetWidth;                 // 强制回流，让动画能重复播放
+      void el.offsetWidth;                   // 强制回流，让动画能重复播放
       el.classList.add('error');
     });
     clearTimeout(flashError.timer);
     flashError.timer = setTimeout(function () {
-      card.classList.remove('error');
-      keyInput.classList.remove('error');
-    }, 900);
+      els.forEach(function (el) { el.classList.remove('error'); });
+    }, 1500);
   }
 
   function showMsg(text) {
