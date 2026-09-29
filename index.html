@@ -2083,7 +2083,7 @@ footer a { color: var(--accent); text-decoration: none; }
       li = (li + 1) % lines.length;
       wait = 420;                                // 换句前的短停
     } else if (deleting) {
-      wait = 32;                                 // 比打字快，但不至于一闪而过
+      wait = isAscii ? 14 : 32;                  // 英文句子更长，删除再快一档
     } else {
       wait = isAscii ? 62 : 150;                 // 中文放慢，英文稍快
     }
