@@ -578,7 +578,26 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   -webkit-backdrop-filter: blur(10px);
 }
 .notice > h3 { margin: 0 0 4px; font-size: 18px; letter-spacing: -.2px; }
-.notice-date { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+.notice-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.notice-date { color: var(--muted); font-size: 12.5px; }
+/* 置顶：时间右侧的独立小标识 */
+.notice-top-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: .5px;
+  color: #fff;
+  background: #e5484d;
+}
 .notice-empty { color: var(--muted); margin: 0; }
 
 /* Markdown 渲染（公告与后台预览共用） */
@@ -996,6 +1015,13 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   grid-template-columns: 1fr 130px auto;
   gap: 10px;
   align-items: center;
+}
+.admin-notice-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 .admin-check {
   display: flex;
@@ -1542,7 +1568,10 @@ footer a { color: var(--accent); text-decoration: none; }
       <div id="admin-pane-notice" class="admin-cols">
         <ul id="admin-list" class="admin-list"></ul>
         <div class="admin-edit">
-          <input id="admin-notice-title" class="admin-input" placeholder="公告标题">
+          <div class="admin-notice-meta">
+            <input id="admin-notice-title" class="admin-input" placeholder="公告标题">
+            <label class="admin-check"><input type="checkbox" id="admin-notice-top"> 置顶</label>
+          </div>
           <div class="md-split">
             <div class="md-editor">
               <pre class="md-hl" aria-hidden="true"><code id="admin-md-hl"></code></pre>
@@ -2349,7 +2378,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function render() {
     var box = document.getElementById('notice-list');
     if (!box) return;
-    var list = load().slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    var list = load().slice().sort(function (a, b) {
+      if (!!b.top !== !!a.top) return b.top ? 1 : -1;   // 置顶的排在最前
+      return (b.ts || 0) - (a.ts || 0);
+    });
     if (!list.length) {
       box.innerHTML = '<p class="notice-empty">暂无公告</p>';
       return;
@@ -2357,7 +2389,12 @@ document.getElementById('year').textContent = new Date().getFullYear();
     box.innerHTML = list.map(function (n) {
       return '<article class="notice">' +
         '<h3>' + esc(n.title || '无标题') + '</h3>' +
-        (n.date ? '<div class="notice-date">' + esc(n.date) + '</div>' : '') +
+        ((n.date || n.top)
+          ? '<div class="notice-meta">' +
+              (n.date ? '<span class="notice-date">' + esc(n.date) + '</span>' : '') +
+              (n.top ? '<span class="notice-top-tag">置顶</span>' : '') +
+            '</div>'
+          : '') +
         '<div class="md-body">' + md(n.body) + '</div>' +
         '</article>';
     }).join('');
@@ -2903,6 +2940,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var status = document.getElementById('admin-status');
   var listEl = document.getElementById('admin-list');
   var titleEl = document.getElementById('admin-notice-title');
+  var noticeTopEl = document.getElementById('admin-notice-top');
   var mdEl = document.getElementById('admin-md');
   var prevEl = document.getElementById('admin-preview');
   var currentId = null;
@@ -2951,7 +2989,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
   }
 
   function refresh() {
-    var list = API.load().slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    var list = API.load().slice().sort(function (a, b) {
+      if (!!b.top !== !!a.top) return b.top ? 1 : -1;   // 置顶的排在最前
+      return (b.ts || 0) - (a.ts || 0);
+    });
     listEl.innerHTML = '';
     if (!list.length) {
       listEl.innerHTML = '<li><span class="li-title">还没有公告</span></li>';
@@ -2960,7 +3001,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     list.forEach(function (n) {
       var li = document.createElement('li');
       if (n.id === currentId) li.className = 'active';
-      li.innerHTML = '<span class="li-title">' + API.esc(n.title || '无标题') + '</span>' +
+      li.innerHTML = '<span class="li-title">' + (n.top ? '📌 ' : '') +
+        API.esc(n.title || '无标题') + '</span>' +
         '<small>' + API.esc(n.date || '') + '</small>';
       li.addEventListener('click', function () { edit(n.id); });
       listEl.appendChild(li);
@@ -2983,6 +3025,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       if (list[i].id === id) {
         currentId = id;
         titleEl.value = list[i].title || '';
+        noticeTopEl.checked = !!list[i].top;
         mdEl.value = list[i].body || '';
         preview();
         status.textContent = '';
@@ -3135,6 +3178,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     if (paneArticle && !paneArticle.hidden) { artNew(); return; }
     currentId = 'n' + Date.now();
     titleEl.value = '';
+    noticeTopEl.checked = false;
     mdEl.value = '';
     preview();
     status.textContent = '新建中：填好标题和内容后点「保存」';
@@ -3151,12 +3195,19 @@ document.getElementById('year').textContent = new Date().getFullYear();
     }
     if (!currentId) currentId = 'n' + Date.now();
     var list = API.load();
-    var item = { id: currentId, title: title || '无标题', body: body, date: today(), ts: Date.now() };
-    var found = false;
-    for (var i = 0; i < list.length; i++) {
-      if (list[i].id === currentId) { list[i] = item; found = true; break; }
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].id === currentId) { idx = i; break; }
+    if (idx >= 0) {
+      // 编辑已有公告：只改内容，保留原来的发布时间
+      list[idx].title = title || '无标题';
+      list[idx].body = body;
+      list[idx].top = !!noticeTopEl.checked;
+    } else {
+      list.push({
+        id: currentId, title: title || '无标题', body: body,
+        top: !!noticeTopEl.checked, date: today(), ts: Date.now()
+      });
     }
-    if (!found) list.push(item);
     API.save(list);
     API.render();
     refresh();
@@ -3170,6 +3221,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     API.save(list);
     currentId = null;
     titleEl.value = '';
+    noticeTopEl.checked = false;
     mdEl.value = '';
     preview();
     API.render();
@@ -3406,22 +3458,26 @@ document.getElementById('year').textContent = new Date().getFullYear();
     var title = artTitleEl.value.trim(), body = artMdEl.value;
     if (!title && !body.trim()) { artMsg.textContent = '标题和内容不能都为空'; return; }
     if (!artCurrentId) artCurrentId = 'a' + Date.now();
-    var list = ART.load(), found = false;
-    for (var i = 0; i < list.length; i++) if (list[i].id === artCurrentId) { found = true; break; }
-    var item = {
-      id: artCurrentId,
-      title: title || '无标题',
-      category: artCatEl.value.trim(),
-      state: artStateEl.value,
-      top: artTopEl.checked,
-      body: body,
-      date: today() + ' ' + nowTime(),
-      ts: Date.now()
-    };
-    if (found) {
-      for (var j = 0; j < list.length; j++) if (list[j].id === artCurrentId) { list[j] = item; break; }
+    var list = ART.load(), idx = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].id === artCurrentId) { idx = i; break; }
+    if (idx >= 0) {
+      // 编辑已有文章：只改内容，保留原来的发布时间
+      list[idx].title = title || '无标题';
+      list[idx].category = artCatEl.value.trim();
+      list[idx].state = artStateEl.value;
+      list[idx].top = artTopEl.checked;
+      list[idx].body = body;
     } else {
-      list.push(item);
+      list.push({
+        id: artCurrentId,
+        title: title || '无标题',
+        category: artCatEl.value.trim(),
+        state: artStateEl.value,
+        top: artTopEl.checked,
+        body: body,
+        date: today() + ' ' + nowTime(),
+        ts: Date.now()
+      });
     }
     ART.save(list);
     ART.renderList();
