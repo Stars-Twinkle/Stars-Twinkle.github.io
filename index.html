@@ -2773,6 +2773,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     }
     ta.addEventListener('input', function () { syncHl(); syncScroll(); });
     ta.addEventListener('scroll', syncScroll);
+    // 后台有时会用代码直接设 value（不会触发 input），所以留一个手动同步入口
+    ta.__syncHl = syncHl;
     syncHl();
 
     ta.addEventListener('keydown', function (ev) {
@@ -2874,6 +2876,11 @@ document.getElementById('year').textContent = new Date().getFullYear();
   ['admin-md', 'admin-art-md'].forEach(function (id) {
     enhance(document.getElementById(id));
   });
+
+  /* 供后台用代码设置 textarea 的值之后手动调用，让语法高亮层立刻跟上 */
+  window.STEditorSync = function (el) {
+    if (el && el.__syncHl) el.__syncHl();
+  };
 })();
 
 /* ---------- 后台（页面无入口，访问 #admin 才会出现） ---------- */
@@ -2964,6 +2971,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     var html = API.md(mdEl.value);
     prevEl.innerHTML = html || '<p class="notice-empty">（预览）</p>';
     if (API.afterRender) API.afterRender(prevEl);
+    // textarea 的文字是透明的，值由代码设置时也要让语法高亮层跟上，否则编辑区看起来是空的
+    if (window.STEditorSync) window.STEditorSync(mdEl);
   }
   // 渲染库加载完成后，编辑器预览也要重渲一次
   (window.__renderQueue = window.__renderQueue || []).push(function () { preview(); });
@@ -3122,6 +3131,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
   });
 
   document.getElementById('admin-new').addEventListener('click', function () {
+    // 当前在「文章」标签下时，新建的应该是文章
+    if (paneArticle && !paneArticle.hidden) { artNew(); return; }
     currentId = 'n' + Date.now();
     titleEl.value = '';
     mdEl.value = '';
@@ -3329,6 +3340,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function artPreview() {
     artPrevEl.innerHTML = API.md(artMdEl.value) || '<p class="notice-empty">（预览）</p>';
     if (API.afterRender) API.afterRender(artPrevEl);
+    // textarea 的文字是透明的，值由代码设置时也要让语法高亮层跟上，否则编辑区看起来是空的
+    if (window.STEditorSync) window.STEditorSync(artMdEl);
   }
   if (ART) (window.__renderQueue = window.__renderQueue || []).push(function () { artPreview(); });
   artMdEl.addEventListener('input', artPreview);
@@ -3371,6 +3384,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
         return;
       }
     }
+  }
+
+  /* 新建文章：清空表单 */
+  function artNew() {
+    if (!ART) return;
+    artCurrentId = null;
+    artTitleEl.value = '';
+    artCatEl.value = '';
+    artStateEl.value = 'public';
+    artTopEl.checked = false;
+    artMdEl.value = '';
+    artPreview();
+    artMsg.textContent = '新建中：填好标题和内容后点「保存」';
+    artRefresh();
+    artTitleEl.focus();
   }
 
   document.getElementById('admin-art-save').addEventListener('click', function () {
