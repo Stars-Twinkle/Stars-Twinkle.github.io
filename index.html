@@ -586,7 +586,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   margin-bottom: 10px;
 }
 .notice-date { color: var(--muted); font-size: 12.5px; }
-/* 置顶：时间右侧的独立小标识 */
+/* 置顶小标识：红色渐变 + 悬浮互动（和 hero 按钮同款手感） */
 .notice-top-tag {
   display: inline-block;
   padding: 1px 8px;
@@ -596,7 +596,16 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   line-height: 1.6;
   letter-spacing: .5px;
   color: #fff;
-  background: #e5484d;
+  background: linear-gradient(120deg, #ff7a6e, #e5484d 52%, #c8383f);
+  background-size: 180% 100%;
+  background-position: 0 0;
+  box-shadow: 0 0 0 rgba(229, 72, 77, 0);
+  transition: transform .22s, box-shadow .22s, background-position .38s;
+}
+.notice-top-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(229, 72, 77, .5);
+  background-position: 100% 0;
 }
 .notice-empty { color: var(--muted); margin: 0; }
 
@@ -979,6 +988,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .art-detail > h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -.4px; }
 .art-detail-meta {
   display: flex;
+  align-items: center;
   gap: 14px;
   flex-wrap: wrap;
   color: var(--muted);
@@ -1022,6 +1032,21 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
+}
+/* 置顶量输入：数字，可为负；> 0 前台才显示置顶 */
+.admin-num {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.admin-num input {
+  width: 88px;
+  padding: 8px 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 .admin-check {
   display: flex;
@@ -1490,7 +1515,6 @@ footer a { color: var(--accent); text-decoration: none; }
               <th class="c-cat">分类</th>
               <th class="c-state">状态</th>
               <th class="c-date">发布时间</th>
-              <th class="c-top">置顶</th>
               <th class="c-views">浏览</th>
               <th class="c-act">操作</th>
             </tr>
@@ -1570,7 +1594,10 @@ footer a { color: var(--accent); text-decoration: none; }
         <div class="admin-edit">
           <div class="admin-notice-meta">
             <input id="admin-notice-title" class="admin-input" placeholder="公告标题">
-            <label class="admin-check"><input type="checkbox" id="admin-notice-top"> 置顶</label>
+            <label class="admin-num" title="大于 0 时前台显示「置顶」标签；可为负数，数值越大排得越前">
+              置顶量
+              <input type="number" id="admin-notice-top" class="admin-input" value="0" step="1">
+            </label>
           </div>
           <div class="md-split">
             <div class="md-editor">
@@ -1597,7 +1624,10 @@ footer a { color: var(--accent); text-decoration: none; }
               <option value="public">公开</option>
               <option value="draft">草稿</option>
             </select>
-            <label class="admin-check"><input type="checkbox" id="admin-art-top"> 置顶</label>
+            <label class="admin-num" title="大于 0 时前台显示「置顶」标签；可为负数，数值越大排得越前">
+              置顶量
+              <input type="number" id="admin-art-top" class="admin-input" value="0" step="1">
+            </label>
           </div>
           <div class="md-split">
             <div class="md-editor">
@@ -2015,6 +2045,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
     ts: 1
   }];
 
+  /* 置顶量：数字，默认 0，可以为负。只有 > 0 才算置顶。
+     兼容旧数据：true 当作 1，false / 缺失当作 0。 */
+  function topScore(item) {
+    var t = item && item.top;
+    if (t === true) return 1;
+    if (!t) return 0;
+    var n = Number(t);
+    return isNaN(n) ? 0 : n;
+  }
+  /* 先按置顶量降序，置顶量相同再按发布时间倒序 */
+  function byTopThenTime(a, b) {
+    var d = topScore(b) - topScore(a);
+    return d ? d : ((b.ts || 0) - (a.ts || 0));
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;')
@@ -2378,10 +2423,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function render() {
     var box = document.getElementById('notice-list');
     if (!box) return;
-    var list = load().slice().sort(function (a, b) {
-      if (!!b.top !== !!a.top) return b.top ? 1 : -1;   // 置顶的排在最前
-      return (b.ts || 0) - (a.ts || 0);
-    });
+    var list = load().slice().sort(byTopThenTime);
     if (!list.length) {
       box.innerHTML = '<p class="notice-empty">暂无公告</p>';
       return;
@@ -2389,10 +2431,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
     box.innerHTML = list.map(function (n) {
       return '<article class="notice">' +
         '<h3>' + esc(n.title || '无标题') + '</h3>' +
-        ((n.date || n.top)
+        ((n.date || topScore(n) > 0)
           ? '<div class="notice-meta">' +
               (n.date ? '<span class="notice-date">' + esc(n.date) + '</span>' : '') +
-              (n.top ? '<span class="notice-top-tag">置顶</span>' : '') +
+              (topScore(n) > 0 ? '<span class="notice-top-tag">置顶</span>' : '') +
             '</div>'
           : '') +
         '<div class="md-body">' + md(n.body) + '</div>' +
@@ -2465,7 +2507,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
   window.STNotices = {
     md: md, esc: esc, load: load, save: saveLocal, render: render,
     afterRender: afterRender, KEY: KEY, DEFAULT: DEFAULT,
-    clearDirty: clearDirty, isDirty: isDirty
+    clearDirty: clearDirty, isDirty: isDirty,
+    topScore: topScore, byTopThenTime: byTopThenTime
   };
   render();
 
@@ -2550,10 +2593,18 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function clearDirty() {
     try { localStorage.removeItem(KEY + '-dirty'); } catch (e) {}
   }
+  /* 置顶量：> 0 才算置顶（与公告同一套规则） */
+  var topScore = (window.STNotices && window.STNotices.topScore) || function (item) {
+    var t = item && item.top;
+    if (t === true) return 1;
+    if (!t) return 0;
+    var n = Number(t);
+    return isNaN(n) ? 0 : n;
+  };
   function sorted(list) {
     return list.slice().sort(function (a, b) {
-      if (!!b.top !== !!a.top) return b.top ? 1 : -1;
-      return (b.ts || 0) - (a.ts || 0);
+      var d = topScore(b) - topScore(a);
+      return d ? d : ((b.ts || 0) - (a.ts || 0));
     });
   }
 
@@ -2568,12 +2619,12 @@ document.getElementById('year').textContent = new Date().getFullYear();
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td><a class="art-link" href="#article/' + encodeURIComponent(a.id) + '">' +
+          (topScore(a) > 0 ? '<span class="notice-top-tag">置顶</span>' : '') +
           esc(a.title || '无标题') + '</a></td>' +
         '<td><span class="art-cat">' + esc(a.category || '未分类') + '</span></td>' +
         '<td><span class="art-state ' + (a.state === 'draft' ? 'draft' : 'public') + '">' +
           (a.state === 'draft' ? '草稿' : '公开') + '</span></td>' +
         '<td><span class="art-cat">' + esc(a.date || '') + '</span></td>' +
-        '<td><span class="art-top">' + (a.top ? '置顶' : '') + '</span></td>' +
         '<td><span class="art-views" data-views="' + esc(a.id) + '">—</span></td>' +
         '<td><button class="art-act-btn" type="button">阅读</button></td>';
       tr.querySelector('.art-act-btn').addEventListener('click', function () {
@@ -2596,6 +2647,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     box.innerHTML =
       '<h1>' + esc(a.title || '无标题') + '</h1>' +
       '<div class="art-detail-meta">' +
+        (topScore(a) > 0 ? '<span class="notice-top-tag">置顶</span>' : '') +
         '<span>' + esc(a.date || '') + '</span>' +
         (a.category ? '<span>分类：' + esc(a.category) + '</span>' : '') +
         '<span>' + (a.state === 'draft' ? '草稿' : '公开') + '</span>' +
@@ -2989,10 +3041,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
   }
 
   function refresh() {
-    var list = API.load().slice().sort(function (a, b) {
-      if (!!b.top !== !!a.top) return b.top ? 1 : -1;   // 置顶的排在最前
-      return (b.ts || 0) - (a.ts || 0);
-    });
+    var list = API.load().slice().sort(API.byTopThenTime);
     listEl.innerHTML = '';
     if (!list.length) {
       listEl.innerHTML = '<li><span class="li-title">还没有公告</span></li>';
@@ -3001,9 +3050,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
     list.forEach(function (n) {
       var li = document.createElement('li');
       if (n.id === currentId) li.className = 'active';
-      li.innerHTML = '<span class="li-title">' + (n.top ? '📌 ' : '') +
+      var score = API.topScore(n);
+      li.innerHTML = '<span class="li-title">' + (score > 0 ? '📌 ' : '') +
         API.esc(n.title || '无标题') + '</span>' +
-        '<small>' + API.esc(n.date || '') + '</small>';
+        '<small>' + (score ? score + ' · ' : '') + API.esc(n.date || '') + '</small>';
       li.addEventListener('click', function () { edit(n.id); });
       listEl.appendChild(li);
     });
@@ -3025,7 +3075,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       if (list[i].id === id) {
         currentId = id;
         titleEl.value = list[i].title || '';
-        noticeTopEl.checked = !!list[i].top;
+        noticeTopEl.value = String(API.topScore(list[i]));
         mdEl.value = list[i].body || '';
         preview();
         status.textContent = '';
@@ -3178,7 +3228,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     if (paneArticle && !paneArticle.hidden) { artNew(); return; }
     currentId = 'n' + Date.now();
     titleEl.value = '';
-    noticeTopEl.checked = false;
+    noticeTopEl.value = '0';
     mdEl.value = '';
     preview();
     status.textContent = '新建中：填好标题和内容后点「保存」';
@@ -3201,11 +3251,11 @@ document.getElementById('year').textContent = new Date().getFullYear();
       // 编辑已有公告：只改内容，保留原来的发布时间
       list[idx].title = title || '无标题';
       list[idx].body = body;
-      list[idx].top = !!noticeTopEl.checked;
+      list[idx].top = parseInt(noticeTopEl.value, 10) || 0;
     } else {
       list.push({
         id: currentId, title: title || '无标题', body: body,
-        top: !!noticeTopEl.checked, date: today(), ts: Date.now()
+        top: parseInt(noticeTopEl.value, 10) || 0, date: today(), ts: Date.now()
       });
     }
     API.save(list);
@@ -3221,7 +3271,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     API.save(list);
     currentId = null;
     titleEl.value = '';
-    noticeTopEl.checked = false;
+    noticeTopEl.value = '0';
     mdEl.value = '';
     preview();
     API.render();
@@ -3409,8 +3459,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
     list.forEach(function (a) {
       var li = document.createElement('li');
       if (a.id === artCurrentId) li.className = 'active';
-      li.innerHTML = '<span class="li-title">' + API.esc(a.title || '无标题') + '</span>' +
-        '<small>' + API.esc((a.date || '').slice(5, 10)) +
+      var score = topScore(a);
+      li.innerHTML = '<span class="li-title">' + (score > 0 ? '📌 ' : '') +
+        API.esc(a.title || '无标题') + '</span>' +
+        '<small>' + (score ? score + ' · ' : '') + API.esc((a.date || '').slice(5, 10)) +
         ' · <span data-views="' + API.esc(a.id) + '">—</span></small>';
       li.addEventListener('click', function () { artEdit(a.id); });
       artListEl.appendChild(li);
@@ -3428,7 +3480,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
         artTitleEl.value = a.title || '';
         artCatEl.value = a.category || '';
         artStateEl.value = a.state || 'public';
-        artTopEl.checked = !!a.top;
+        artTopEl.value = String(topScore(a));
         artMdEl.value = a.body || '';
         artPreview();
         artMsg.textContent = '';
@@ -3445,7 +3497,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     artTitleEl.value = '';
     artCatEl.value = '';
     artStateEl.value = 'public';
-    artTopEl.checked = false;
+    artTopEl.value = '0';
     artMdEl.value = '';
     artPreview();
     artMsg.textContent = '新建中：填好标题和内容后点「保存」';
@@ -3465,7 +3517,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       list[idx].title = title || '无标题';
       list[idx].category = artCatEl.value.trim();
       list[idx].state = artStateEl.value;
-      list[idx].top = artTopEl.checked;
+      list[idx].top = parseInt(artTopEl.value, 10) || 0;
       list[idx].body = body;
     } else {
       list.push({
@@ -3473,7 +3525,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
         title: title || '无标题',
         category: artCatEl.value.trim(),
         state: artStateEl.value,
-        top: artTopEl.checked,
+        top: parseInt(artTopEl.value, 10) || 0,
         body: body,
         date: today() + ' ' + nowTime(),
         ts: Date.now()
@@ -3494,7 +3546,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     artTitleEl.value = '';
     artCatEl.value = '';
     artStateEl.value = 'public';
-    artTopEl.checked = false;
+    artTopEl.value = '0';
     artMdEl.value = '';
     artPreview();
     ART.renderList();
