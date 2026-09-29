@@ -1393,15 +1393,19 @@ select.admin-input { cursor: pointer; }
 .md-editor:not(.hl-on) textarea.md-input::selection { color: #fff; }
 [data-theme="light"] .md-editor:not(.hl-on) textarea.md-input::selection { color: #0b1220; }
 
-.md-hl .t-head { color: #ffb347; font-weight: 700; }
+/* 注意：这里只能改颜色，绝对不能改 font-weight / font-style / letter-spacing。
+   编辑器是「透明 textarea + 高亮层」两层叠出来的，两层排版必须逐字一致；
+   一旦加粗或倾斜，字宽就变了，折行位置跟着变，两层高度会越差越多，
+   表现就是滚到下面时编辑区「文字不显示」（高亮层已经错位到别处）。 */
+.md-hl .t-head { color: #ffb347; }
 .md-hl .t-fence { color: #7aa2ff; }
 .md-hl .t-code { color: #7ee0a8; border-radius: 4px; background: rgba(126, 224, 168, .12); }
 .md-hl .t-math { color: #d8a6ff; }
-.md-hl .t-bold { color: #ffd98a; font-weight: 700; }
-.md-hl .t-em { color: #ffd98a; font-style: italic; }
+.md-hl .t-bold { color: #ffd98a; }
+.md-hl .t-em { color: #ffd98a; }
 .md-hl .t-del { color: var(--muted); text-decoration: line-through; }
 .md-hl .t-quote { color: #8fb8ff; }
-.md-hl .t-list { color: #ff9d6b; font-weight: 700; }
+.md-hl .t-list { color: #ff9d6b; }
 .md-hl .t-task { color: #7ee0a8; }
 .md-hl .t-link { color: #6ec8ff; }
 .md-hl .t-url { color: var(--muted); }
@@ -3012,6 +3016,16 @@ document.getElementById('year').textContent = new Date().getFullYear();
         layer.style.transform = 'translate(' + (-ta.scrollLeft) + 'px,' + (-ta.scrollTop) + 'px)';
       }
     }
+    /* 兜底：scroll 事件在部分环境（页面不可见、无头浏览器）不会派发，
+       用轻量轮询保证高亮层始终跟着编辑区，成本可以忽略。 */
+    var lastTop = -1, lastLeft = -1;
+    setInterval(function () {
+      if (ta.scrollTop !== lastTop || ta.scrollLeft !== lastLeft) {
+        lastTop = ta.scrollTop;
+        lastLeft = ta.scrollLeft;
+        syncScroll();
+      }
+    }, 150);
     ta.addEventListener('input', function () { syncHl(); syncScroll(); });
     ta.addEventListener('scroll', syncScroll);
     // 后台有时会用代码直接设 value（不会触发 input），所以留一个手动同步入口
