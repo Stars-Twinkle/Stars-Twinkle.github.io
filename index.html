@@ -2360,8 +2360,14 @@ document.getElementById('year').textContent = new Date().getFullYear();
   }
 
   function parseBlocks(lines) {
-    var out = [], i = 0;
+    var out = [], i = 0, blockLine = 0;
+    /* 输出一个顶层块：顺带把它的源码起始行写进 data-l，
+       供「编辑区 ↔ 预览区按 Markdown 内容同步滚动」定位。 */
+    function emit(html) {
+      out.push(html.replace(/^(\s*<[a-zA-Z][\w-]*)/, '$1 data-l="' + blockLine + '"'));
+    }
     while (i < lines.length) {
+      blockLine = i + 1;               // 当前块的源码起始行
       var line = lines[i];
 
       // 围栏代码块：``` 或 ~~~，可带语言与参数
@@ -2375,7 +2381,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
         while (i < lines.length && !closeRe.test(lines[i])) { buf.push(lines[i]); i++; }
         i++;
         var parts = info.split(/\s+/);
-        out.push(codeBlockHTML(parts[0], parts.slice(1).join(' '), buf.join('\n')));
+        emit(codeBlockHTML(parts[0], parts.slice(1).join(' '), buf.join('\n')));
         continue;
       }
 
@@ -2387,7 +2393,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
         i++;
         while (i < lines.length && !endRe.test(lines[i])) { cbody.push(lines[i]); i++; }
         if (i < lines.length) i++;
-        out.push(renderContainer(cm[2].toLowerCase(), cm[3] || '', cm[4] || '', cbody.join('\n')));
+        emit(renderContainer(cm[2].toLowerCase(), cm[3] || '', cm[4] || '', cbody.join('\n')));
         continue;
       }
 
@@ -2409,7 +2415,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           while (i < lines.length && !mEnd.test(lines[i])) { acc.push(lines[i]); i++; }
           if (i < lines.length) { acc.push(lines[i].replace(mEnd, '')); i++; }
         }
-        out.push('<div class="math-block">' + renderMath(acc.join('\n').trim(), true) + '</div>');
+        emit('<div class="math-block">' + renderMath(acc.join('\n').trim(), true) + '</div>');
         continue;
       }
 
@@ -2417,13 +2423,13 @@ document.getElementById('year').textContent = new Date().getFullYear();
       var hm = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
       if (hm) {
         var lv = hm[1].length;
-        out.push('<h' + lv + '>' + inline(hm[2]) + '</h' + lv + '>');
+        emit('<h' + lv + '>' + inline(hm[2]) + '</h' + lv + '>');
         i++;
         continue;
       }
 
       // 分隔线
-      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { emit('<hr>'); i++; continue; }
 
       // 引用（内容递归解析，支持嵌套）
       if (/^\s*>/.test(line)) {
@@ -2432,7 +2438,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           q.push(lines[i].replace(/^\s*>\s?/, ''));
           i++;
         }
-        out.push('<blockquote>' + parseBlocks(q) + '</blockquote>');
+        emit('<blockquote>' + parseBlocks(q) + '</blockquote>');
         continue;
       }
 
@@ -2462,7 +2468,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           }
           tb += '</tr>';
         });
-        out.push(tb + '</tbody></table></div>');
+        emit(tb + '</tbody></table></div>');
         continue;
       }
 
@@ -2476,7 +2482,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
             inline(lines[i].replace(/^\s*[-*+]\s+\[[ xX]\]\s+/, '')) + '</li>');
           i++;
         }
-        out.push('<ul class="md-tasks">' + tl.join('') + '</ul>');
+        emit('<ul class="md-tasks">' + tl.join('') + '</ul>');
         continue;
       }
 
@@ -2487,7 +2493,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           ul.push('<li>' + inline(lines[i].replace(/^\s*[-*+]\s+/, '')) + '</li>');
           i++;
         }
-        out.push('<ul>' + ul.join('') + '</ul>');
+        emit('<ul>' + ul.join('') + '</ul>');
         continue;
       }
 
@@ -2498,7 +2504,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
           ol.push('<li>' + inline(lines[i].replace(/^\s*\d+[.)]\s+/, '')) + '</li>');
           i++;
         }
-        out.push('<ol>' + ol.join('') + '</ol>');
+        emit('<ol>' + ol.join('') + '</ol>');
         continue;
       }
 
@@ -2510,7 +2516,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
         para.push(lines[i]);
         i++;
       }
-      out.push('<p>' + inline(para.join('\n')) + '</p>');
+      emit('<p>' + inline(para.join('\n')) + '</p>');
     }
     return out.join('\n');
   }
@@ -3008,7 +3014,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
         ta.classList.add('no-hl');
       }
       // 关键：换内容后 textarea 的滚动位置会归零，高亮层的平移量必须跟着归位。
-      // 否则它会停在旧的偏移上，表现就是「编辑器底部（或整块）文字不显示」。
+      // 同时要把可用宽度对齐（滚动条会改变 textarea 的内容宽度）。
+      syncWidth();
       syncScroll();
     }
     function syncScroll() {
@@ -3016,6 +3023,16 @@ document.getElementById('year').textContent = new Date().getFullYear();
         layer.style.transform = 'translate(' + (-ta.scrollLeft) + 'px,' + (-ta.scrollTop) + 'px)';
       }
     }
+    /* 高亮层的可用宽度必须和 textarea 的内容区一致：
+       textarea 一旦出现垂直滚动条，内容区就窄掉十几像素，而高亮层没有滚动条。
+       两边宽度不同 → 折行位置不同 → 两层越往下偏得越多（就是「底部文字不显示」）。 */
+    function syncWidth() {
+      if (!layer) return;
+      var sbw = ta.offsetWidth - ta.clientWidth;
+      if (!(sbw > 0)) sbw = 0;
+      layer.style.paddingRight = (14 + sbw) + 'px';
+    }
+    window.addEventListener('resize', syncWidth);
     /* 兜底：scroll 事件在部分环境（页面不可见、无头浏览器）不会派发，
        用轻量轮询保证高亮层始终跟着编辑区，成本可以忽略。 */
     var lastTop = -1, lastLeft = -1;
@@ -3132,27 +3149,65 @@ document.getElementById('year').textContent = new Date().getFullYear();
     enhance(document.getElementById(id));
   });
 
-  /* 编辑区 ↔ 预览区 双向同步滚动：按各自的滚动比例映射位置 */
-  function bindScrollSync(ta, prev) {
+  /* 编辑区 ↔ 预览区同步滚动：按 Markdown 内容对应，而不是按像素比例。
+     预览里每个顶层块都带 data-l（它在源码中的起始行），
+     先把编辑区的滚动位置换算成源码行号，再让预览滚到该行对应的块。
+     这样代码块、图片这类「预览高度和源码行数不成正比」的内容也能对得上。 */
+  function bindContentSync(ta, prev) {
     if (!ta || !prev) return;
     var lastFrom = null, lastAt = 0;
-    function sync(from, to) {
-      var now = Date.now();
-      // 这次滚动是被对面刚刚同步过来的，忽略它，免得两边互相推。
-      // 用时间戳而不是 busy 标志：标志一旦因 requestAnimationFrame 被暂停就没法解锁了。
-      if (lastFrom === to && now - lastAt < 140) return;
-      var maxFrom = from.scrollHeight - from.clientHeight;
-      var maxTo = to.scrollHeight - to.clientHeight;
-      if (maxFrom <= 0 || maxTo <= 0) return;
-      lastFrom = from;
-      lastAt = now;
-      to.scrollTop = (from.scrollTop / maxFrom) * maxTo;
+
+    function srcLineCount() { return (ta.value || '').split('\n').length; }
+    /* 编辑区大致停在源码第几行 */
+    function editorLine() {
+      var max = ta.scrollHeight - ta.clientHeight;
+      var r = max > 0 ? ta.scrollTop / max : 0;
+      return Math.max(1, Math.round(r * srcLineCount()));
     }
-    ta.addEventListener('scroll', function () { sync(ta, prev); }, { passive: true });
-    prev.addEventListener('scroll', function () { sync(prev, ta); }, { passive: true });
+    /* 预览里起始行不超过 line 的最后一个块 */
+    function blockAt(line) {
+      var kids = prev.children, pick = null;
+      for (var i = 0; i < kids.length; i++) {
+        var l = parseInt(kids[i].getAttribute('data-l'), 10);
+        if (isNaN(l)) continue;
+        if (l <= line) pick = kids[i]; else break;
+      }
+      return pick || kids[0] || null;
+    }
+    /* 预览顶部当前露出的是哪个块 */
+    function topBlock() {
+      var top = prev.getBoundingClientRect().top;
+      var kids = prev.children;
+      for (var i = 0; i < kids.length; i++) {
+        if (kids[i].getBoundingClientRect().bottom - top > 4) return kids[i];
+      }
+      return kids[kids.length - 1] || null;
+    }
+
+    ta.addEventListener('scroll', function () {
+      var now = Date.now();
+      if (lastFrom === prev && now - lastAt < 140) return;
+      lastFrom = ta; lastAt = now;
+      var el = blockAt(editorLine());
+      if (!el) return;
+      prev.scrollTop += el.getBoundingClientRect().top - prev.getBoundingClientRect().top;
+    }, { passive: true });
+
+    prev.addEventListener('scroll', function () {
+      var now = Date.now();
+      if (lastFrom === ta && now - lastAt < 140) return;
+      lastFrom = prev; lastAt = now;
+      var el = topBlock();
+      if (!el) return;
+      var l = parseInt(el.getAttribute('data-l'), 10);
+      if (isNaN(l)) return;
+      var max = ta.scrollHeight - ta.clientHeight;
+      ta.scrollTop = (l / Math.max(1, srcLineCount())) * max;
+    }, { passive: true });
   }
+
   [['admin-md', 'admin-preview'], ['admin-art-md', 'admin-art-preview']].forEach(function (p) {
-    bindScrollSync(document.getElementById(p[0]), document.getElementById(p[1]));
+    bindContentSync(document.getElementById(p[0]), document.getElementById(p[1]));
   });
 
   /* 供后台用代码设置 textarea 的值之后手动调用，让语法高亮层立刻跟上 */
