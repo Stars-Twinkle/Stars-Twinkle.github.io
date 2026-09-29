@@ -1331,12 +1331,14 @@ select.admin-input { cursor: pointer; }
 .md-editor .md-hl {
   position: absolute;
   top: 0; left: 0;
-  /* 高亮层放在 textarea 之上：这样选中的时候看到的始终是这一层的文字，
-     textarea 的透明文字不会和它错位重影（点击仍然穿透到 textarea） */
+  /* 高亮层放在 textarea 之上：选中的时候看到的始终是这一层的文字，
+     textarea 的透明文字不会和它错位重影（点击仍然穿透到 textarea）。
+     它自身也是滚动容器（滚动条隐藏），位置由 scrollTop 同步——
+     比用 transform 平移可靠：内容高度哪怕差一点，也不会整块错位。 */
   z-index: 2;
   margin: 0;
   width: 100%;
-  min-height: 100%;
+  height: 100%;
   padding: 12px 14px;
   border: 0;
   background: none;
@@ -1348,8 +1350,12 @@ select.admin-input { cursor: pointer; }
   overflow-wrap: anywhere;
   word-break: break-word;
   tab-size: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;        /* 自己滚动，但不显示滚动条 */
   pointer-events: none;
 }
+.md-editor .md-hl::-webkit-scrollbar { width: 0; height: 0; }
 .md-editor textarea.md-input {
   position: relative;
   z-index: 1;
@@ -3017,11 +3023,16 @@ document.getElementById('year').textContent = new Date().getFullYear();
       // 同时要把可用宽度对齐（滚动条会改变 textarea 的内容宽度）。
       syncWidth();
       syncScroll();
+      // 内容刚重建完，浏览器还没算好布局，scrollTop 要等一拍才设得上
+      setTimeout(function () { syncWidth(); syncScroll(); }, 0);
     }
+    /* 高亮层自己也是滚动容器，位置直接对齐 textarea 的 scrollTop。
+       这比用 transform 平移稳得多：即使两层内容高度有细微差别，
+       也只是最后一点点错位，不会出现「滚到下面就一片空白」。 */
     function syncScroll() {
-      if (layer) {
-        layer.style.transform = 'translate(' + (-ta.scrollLeft) + 'px,' + (-ta.scrollTop) + 'px)';
-      }
+      if (!layer) return;
+      if (layer.scrollTop !== ta.scrollTop) layer.scrollTop = ta.scrollTop;
+      if (layer.scrollLeft !== ta.scrollLeft) layer.scrollLeft = ta.scrollLeft;
     }
     /* 高亮层的可用宽度必须和 textarea 的内容区一致：
        textarea 一旦出现垂直滚动条，内容区就窄掉十几像素，而高亮层没有滚动条。
@@ -3035,14 +3046,14 @@ document.getElementById('year').textContent = new Date().getFullYear();
     window.addEventListener('resize', syncWidth);
     /* 兜底：scroll 事件在部分环境（页面不可见、无头浏览器）不会派发，
        用轻量轮询保证高亮层始终跟着编辑区，成本可以忽略。 */
-    var lastTop = -1, lastLeft = -1;
+    /* 兜底轮询：不只看 textarea 有没有滚，而是直接比对两层的实际位置。
+       因为高亮层重建内容后，它自己的 scrollTop 会被浏览器重置为 0，
+       而这时 textarea 并没有动，只盯着 textarea 是发现不了的。 */
     setInterval(function () {
-      if (ta.scrollTop !== lastTop || ta.scrollLeft !== lastLeft) {
-        lastTop = ta.scrollTop;
-        lastLeft = ta.scrollLeft;
+      if (layer && (layer.scrollTop !== ta.scrollTop || layer.scrollLeft !== ta.scrollLeft)) {
         syncScroll();
       }
-    }, 150);
+    }, 120);
     ta.addEventListener('input', function () { syncHl(); syncScroll(); });
     ta.addEventListener('scroll', syncScroll);
     // 后台有时会用代码直接设 value（不会触发 input），所以留一个手动同步入口
