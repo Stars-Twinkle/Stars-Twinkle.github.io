@@ -569,53 +569,26 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 
 /* ============ 公告 ============ */
 .notices { display: grid; gap: 16px; }
-/* ---------- 首页左侧板块导航（仅宽屏显示） ---------- */
-.side-nav {
-  position: fixed;
-  left: 22px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
+/* ---------- 顶栏板块链接（关于 / 公告）：点击跳到对应板块 ---------- */
+.nav-links {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 7px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  backdrop-filter: blur(12px);
+  align-items: center;
+  gap: 2px;
+  margin-right: 8px;
 }
-.side-nav[hidden] { display: none; }
-.side-nav-item {
-  position: relative;
-  padding: 8px 14px 8px 27px;
-  border-radius: 10px;
-  font-size: 13.5px;
+.nav-links[hidden] { display: none; }
+.nav-link {
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 14px;
   color: var(--muted);
   text-decoration: none;
   white-space: nowrap;
   transition: color .2s, background .2s;
 }
-.side-nav-item::before {
-  content: "";
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  margin-top: -3px;
-  border-radius: 50%;
-  background: var(--border);
-  transition: background .2s, transform .2s, box-shadow .2s;
-}
-.side-nav-item:hover { color: var(--text); background: var(--card-hover); }
-.side-nav-item.is-active { color: var(--text); background: var(--card-hover); }
-.side-nav-item.is-active::before {
-  background: var(--accent);
-  transform: scale(1.3);
-  box-shadow: 0 0 8px rgba(255, 179, 71, .7);
-}
-@media (max-width: 1240px) { .side-nav { display: none; } }
+.nav-link:hover { color: var(--text); background: var(--card-hover); }
+.nav-link.is-active { color: var(--accent); background: var(--card-hover); font-weight: 600; }
+@media (max-width: 720px) { .nav-links { display: none; } }
 
 /* ---------- 公告：正文 + 右侧快速跳转目录 ---------- */
 .notice-layout {
@@ -1533,6 +1506,10 @@ footer a { color: var(--accent); text-decoration: none; }
       <span class="logo-text">StarsTwinkle</span>
     </a>
     <nav>
+      <div class="nav-links" id="nav-links">
+        <a class="nav-link" href="#links" data-target="links">关于</a>
+        <a class="nav-link" href="#notice" data-target="notice">公告</a>
+      </div>
       <div class="seg">
         <a class="seg-item is-active" id="seg-home" href="#home">首页</a>
         <a class="seg-item" id="seg-articles" href="#articles">文章</a>
@@ -1546,12 +1523,6 @@ footer a { color: var(--accent); text-decoration: none; }
 </header>
 
 <a id="top"></a>
-
-<!-- ==================== 首页左侧板块导航（仅宽屏显示） ==================== -->
-<nav class="side-nav" id="side-nav" aria-label="首页板块导航">
-  <a class="side-nav-item" href="#links" data-target="links">关于</a>
-  <a class="side-nav-item" href="#notice" data-target="notice">公告</a>
-</nav>
 
 <main class="wrap">
 
@@ -2863,8 +2834,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     function apply() {
       if (home) home.hidden = isArt;
       page.hidden = !isArt;
-      var sideNav = document.getElementById('side-nav');
-      if (sideNav) sideNav.hidden = isArt;      // 左侧板块导航只在首页出现
+      var sideNav = document.getElementById('nav-links');
+      if (sideNav) sideNav.hidden = isArt;      // 顶栏的「关于 / 公告」只在首页出现
       if (isArt) {
         if (m) showDetail(decodeURIComponent(m[1])); else showList();
         window.scrollTo(0, 0);
@@ -3032,6 +3003,9 @@ document.getElementById('year').textContent = new Date().getFullYear();
         if (box) box.classList.remove('hl-on');
         ta.classList.add('no-hl');
       }
+      // 关键：换内容后 textarea 的滚动位置会归零，高亮层的平移量必须跟着归位。
+      // 否则它会停在旧的偏移上，表现就是「编辑器底部（或整块）文字不显示」。
+      syncScroll();
     }
     function syncScroll() {
       if (layer) {
@@ -3142,6 +3116,29 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   ['admin-md', 'admin-art-md'].forEach(function (id) {
     enhance(document.getElementById(id));
+  });
+
+  /* 编辑区 ↔ 预览区 双向同步滚动：按各自的滚动比例映射位置 */
+  function bindScrollSync(ta, prev) {
+    if (!ta || !prev) return;
+    var lastFrom = null, lastAt = 0;
+    function sync(from, to) {
+      var now = Date.now();
+      // 这次滚动是被对面刚刚同步过来的，忽略它，免得两边互相推。
+      // 用时间戳而不是 busy 标志：标志一旦因 requestAnimationFrame 被暂停就没法解锁了。
+      if (lastFrom === to && now - lastAt < 140) return;
+      var maxFrom = from.scrollHeight - from.clientHeight;
+      var maxTo = to.scrollHeight - to.clientHeight;
+      if (maxFrom <= 0 || maxTo <= 0) return;
+      lastFrom = from;
+      lastAt = now;
+      to.scrollTop = (from.scrollTop / maxFrom) * maxTo;
+    }
+    ta.addEventListener('scroll', function () { sync(ta, prev); }, { passive: true });
+    prev.addEventListener('scroll', function () { sync(prev, ta); }, { passive: true });
+  }
+  [['admin-md', 'admin-preview'], ['admin-art-md', 'admin-art-preview']].forEach(function (p) {
+    bindScrollSync(document.getElementById(p[0]), document.getElementById(p[1]));
   });
 
   /* 供后台用代码设置 textarea 的值之后手动调用，让语法高亮层立刻跟上 */
