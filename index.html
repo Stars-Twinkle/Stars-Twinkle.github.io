@@ -569,6 +569,114 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 
 /* ============ 公告 ============ */
 .notices { display: grid; gap: 16px; }
+/* ---------- 首页左侧板块导航（仅宽屏显示） ---------- */
+.side-nav {
+  position: fixed;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  backdrop-filter: blur(12px);
+}
+.side-nav[hidden] { display: none; }
+.side-nav-item {
+  position: relative;
+  padding: 8px 14px 8px 27px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color .2s, background .2s;
+}
+.side-nav-item::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background .2s, transform .2s, box-shadow .2s;
+}
+.side-nav-item:hover { color: var(--text); background: var(--card-hover); }
+.side-nav-item.is-active { color: var(--text); background: var(--card-hover); }
+.side-nav-item.is-active::before {
+  background: var(--accent);
+  transform: scale(1.3);
+  box-shadow: 0 0 8px rgba(255, 179, 71, .7);
+}
+@media (max-width: 1240px) { .side-nav { display: none; } }
+
+/* ---------- 公告：正文 + 右侧快速跳转目录 ---------- */
+.notice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 208px;
+  gap: 20px;
+  align-items: start;
+}
+.notice-toc {
+  position: sticky;
+  top: 92px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  padding: 13px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  backdrop-filter: blur(10px);
+}
+.notice-toc[hidden] { display: none; }
+.notice-toc .toc-title {
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 2px 0 9px 9px;
+}
+.toc-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .2s, background .2s;
+}
+.toc-item:hover { color: var(--text); background: var(--card-hover); }
+.toc-item.is-active { background: var(--card-hover); }
+.toc-item.is-active .toc-text { color: var(--accent); }
+.toc-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toc-top {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  background: linear-gradient(120deg, #ff7a6e, #e5484d);
+}
+@media (max-width: 900px) {
+  .notice-layout { grid-template-columns: 1fr; }
+  .notice-toc { display: none; }
+}
 .notice {
   background: var(--card);
   border: 1px solid var(--border);
@@ -929,7 +1037,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 
 /* 文章列表表格 */
 .art-table-wrap { overflow-x: auto; }
-.art-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.art-table { width: 100%; border-collapse: collapse; font-size: 14.5px; table-layout: fixed; }
 .art-table th {
   text-align: left;
   font-weight: 500;
@@ -945,26 +1053,39 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   vertical-align: middle;
   white-space: nowrap;
 }
-.art-table td:first-child { white-space: normal; }
-.art-table th:first-child { width: 100%; }
+.art-table th, .art-table td { overflow: hidden; }
+/* 除标题外的列按百分比分配，剩下的宽度全给标题列，标题放不下才省略 */
+.art-table .c-cat   { width: 10%; }
+.art-table .c-state { width: 8%; }
+.art-table .c-date  { width: 18%; }
+.art-table .c-views { width: 8%; }
+.art-table .c-act   { width: 9%; }
 .art-table tbody tr:hover td { background: var(--card); }
-.art-table .c-cat, .art-table .c-state, .art-table .c-date,
-.art-table .c-top, .art-table .c-views, .art-table .c-act { width: 1%; white-space: nowrap; }
 .art-views { color: var(--muted); font-variant-numeric: tabular-nums; }
 .art-link {
   color: var(--accent-2);
   text-decoration: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+/* 标题文字：占满剩余宽度，超出用省略号 */
+.art-link .art-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background-image: linear-gradient(90deg, var(--accent-2), var(--accent));
   background-repeat: no-repeat;
   background-position: 0 100%;
   background-size: 0% 2px;
   transition: background-size .38s cubic-bezier(.2, .7, .3, 1);
 }
-.art-link:hover { background-size: 100% 2px; }
-.art-link::after { content: "↗"; font-size: 12px; opacity: .7; }
+.art-link:hover .art-title { background-size: 100% 2px; }
+.art-link::after { content: "↗"; font-size: 12px; opacity: .7; flex: 0 0 auto; }
 .art-cat { color: var(--muted); }
 .art-state { font-size: 13px; }
 .art-state::before { content: "●"; margin-right: 5px; font-size: 10px; }
@@ -1037,14 +1158,14 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .admin-num {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 13.5px;
+  gap: 5px;
+  font-size: 12.5px;
   color: var(--muted);
   white-space: nowrap;
 }
 .admin-num input {
-  width: 88px;
-  padding: 8px 10px;
+  width: 72px;
+  padding: 8px 6px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -1406,6 +1527,12 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <a id="top"></a>
 
+<!-- ==================== 首页左侧板块导航（仅宽屏显示） ==================== -->
+<nav class="side-nav" id="side-nav" aria-label="首页板块导航">
+  <a class="side-nav-item" href="#links" data-target="links">关于</a>
+  <a class="side-nav-item" href="#notice" data-target="notice">公告</a>
+</nav>
+
 <main class="wrap">
 
   <!-- ==================== 首页视图 ==================== -->
@@ -1495,7 +1622,10 @@ footer a { color: var(--accent); text-decoration: none; }
       <div class="kicker">Notice</div>
       <h2>公告</h2>
     </div>
-    <div id="notice-list" class="notices reveal"></div>
+    <div class="notice-layout">
+      <div id="notice-list" class="notices reveal"></div>
+      <aside class="notice-toc" id="notice-toc" hidden></aside>
+    </div>
   </section>
 
   </div><!-- /view-home -->
@@ -2429,7 +2559,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       return;
     }
     box.innerHTML = list.map(function (n) {
-      return '<article class="notice">' +
+      return '<article class="notice" id="notice-' + esc(n.id) + '">' +
         '<h3>' + esc(n.title || '无标题') + '</h3>' +
         ((n.date || topScore(n) > 0)
           ? '<div class="notice-meta">' +
@@ -2441,6 +2571,21 @@ document.getElementById('year').textContent = new Date().getFullYear();
         '</article>';
     }).join('');
     afterRender(box);
+    renderToc(list);
+  }
+
+  /* 公告目录：多于一条时才显示，点击平滑跳到对应公告 */
+  function renderToc(list) {
+    var toc = document.getElementById('notice-toc');
+    if (!toc) return;
+    if (list.length < 2) { toc.hidden = true; toc.innerHTML = ''; return; }
+    toc.hidden = false;
+    toc.innerHTML = '<div class="toc-title">目录</div>' + list.map(function (n) {
+      return '<a class="toc-item" href="#notice-' + esc(n.id) + '" data-target="notice-' + esc(n.id) + '">' +
+        '<span class="toc-text">' + esc(n.title || '无标题') + '</span>' +
+        (topScore(n) > 0 ? '<span class="toc-top">置顶</span>' : '') +
+        '</a>';
+    }).join('');
   }
 
   /* 代码高亮 + 行级包裹：行号内嵌在每行里，长行折行时也不会错位 */
@@ -2620,7 +2765,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
       tr.innerHTML =
         '<td><a class="art-link" href="#article/' + encodeURIComponent(a.id) + '">' +
           (topScore(a) > 0 ? '<span class="notice-top-tag">置顶</span>' : '') +
-          esc(a.title || '无标题') + '</a></td>' +
+          '<span class="art-title">' + esc(a.title || '无标题') + '</span></a></td>' +
         '<td><span class="art-cat">' + esc(a.category || '未分类') + '</span></td>' +
         '<td><span class="art-state ' + (a.state === 'draft' ? 'draft' : 'public') + '">' +
           (a.state === 'draft' ? '草稿' : '公开') + '</span></td>' +
@@ -2698,6 +2843,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
     function apply() {
       if (home) home.hidden = isArt;
       page.hidden = !isArt;
+      var sideNav = document.getElementById('side-nav');
+      if (sideNav) sideNav.hidden = isArt;      // 左侧板块导航只在首页出现
       if (isArt) {
         if (m) showDetail(decodeURIComponent(m[1])); else showList();
         window.scrollTo(0, 0);
@@ -2970,6 +3117,56 @@ document.getElementById('year').textContent = new Date().getFullYear();
   window.STEditorSync = function (el) {
     if (el && el.__syncHl) el.__syncHl();
   };
+})();
+
+/* ---------- 板块导航 / 公告目录：平滑滚动 + 滚动高亮 ---------- */
+(function () {
+  function scrollToEl(el) {
+    var top = el.getBoundingClientRect().top + window.pageYOffset - 84;
+    var startY = window.pageYOffset;
+    try { window.scrollTo({ top: top, behavior: 'smooth' }); }
+    catch (e) { window.scrollTo(0, top); }
+    // 某些环境（无头浏览器、省电模式、prefers-reduced-motion）不会执行平滑滚动，
+    // 这里兜底：如果过一会儿页面完全没动，就直接跳过去。
+    setTimeout(function () {
+      if (Math.abs(window.pageYOffset - startY) < 2 && Math.abs(top - startY) > 4) {
+        window.scrollTo(0, top);
+      }
+    }, 260);
+  }
+
+  // 目录是动态生成的，用事件委托绑一次就够
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('[data-target]') : null;
+    if (!a) return;
+    var el = document.getElementById(a.getAttribute('data-target'));
+    if (!el) return;
+    e.preventDefault();
+    scrollToEl(el);
+  });
+
+  var ticking = false;
+  function spy() {
+    ticking = false;
+    var art = document.getElementById('view-articles');
+    if (art && !art.hidden) return;                 // 文章视图不做高亮
+    var links = document.querySelectorAll('[data-target]');
+    var best = null, bestTop = -Infinity;
+    Array.prototype.forEach.call(links, function (a) {
+      var el = document.getElementById(a.getAttribute('data-target'));
+      if (!el) return;
+      var t = el.getBoundingClientRect().top;
+      if (t <= 150 && t > bestTop) { bestTop = t; best = a.getAttribute('data-target'); }
+    });
+    Array.prototype.forEach.call(links, function (a) {
+      a.classList.toggle('is-active', a.getAttribute('data-target') === best);
+    });
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(spy); }
+  }, { passive: true });
+  window.addEventListener('hashchange', function () { setTimeout(spy, 60); });
+  spy();
 })();
 
 /* ---------- 后台（页面无入口，访问 #admin 才会出现） ---------- */
@@ -3425,6 +3622,15 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   /* ---------- 后台：文章管理 ---------- */
   var ART = window.STArticles;
+  /* 置顶量取值（与前台同一套规则）。后台必须自己持有一份：
+     文章 IIFE 里的 topScore 是那个闭包的局部变量，这里访问不到。 */
+  var topScore = API.topScore || function (item) {
+    var t = item && item.top;
+    if (t === true) return 1;
+    if (!t) return 0;
+    var n = Number(t);
+    return isNaN(n) ? 0 : n;
+  };
   var artListEl = document.getElementById('admin-art-list');
   var artTitleEl = document.getElementById('admin-art-title');
   var artCatEl = document.getElementById('admin-art-cat');
