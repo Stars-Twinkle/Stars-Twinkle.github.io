@@ -1358,6 +1358,9 @@ select.admin-input { cursor: pointer; }
 .md-editor .md-hl {
   position: absolute;
   top: 0; left: 0;
+  /* 高亮层放在 textarea 之上：这样选中的时候看到的始终是这一层的文字，
+     textarea 的透明文字不会和它错位重影（点击仍然穿透到 textarea） */
+  z-index: 2;
   margin: 0;
   width: 100%;
   min-height: 100%;
@@ -1385,7 +1388,10 @@ select.admin-input { cursor: pointer; }
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: transparent;
+  /* 默认显示原生文字：万一高亮层没渲染出来（脚本报错 / 被拦截），
+     编辑区至少还是能看能改的，只是没有颜色。
+     脚本跑通后会加上 .hl-on，才把原生文字藏起来交给高亮层。 */
+  color: var(--text);
   caret-color: var(--accent);
   resize: none;
   outline: none;
@@ -1397,8 +1403,22 @@ select.admin-input { cursor: pointer; }
   word-break: break-word;
   tab-size: 2;
 }
+.md-editor.hl-on textarea.md-input { color: transparent; }
+.md-editor textarea.md-input.no-hl { color: var(--text); }
 .md-editor textarea.md-input::placeholder { color: var(--muted); opacity: .65; }
-.md-editor textarea.md-input::selection { background: rgba(122, 162, 255, .35); }
+/* 选中文本：只画一层半透明底色（在上层高亮文字之下），
+   文字保持透明，避免和底层/上层的高亮文字错位重影 */
+.md-editor.hl-on textarea.md-input::selection {
+  background: rgba(122, 162, 255, .32);
+  color: transparent;
+}
+[data-theme="light"] .md-editor.hl-on textarea.md-input::selection {
+  background: rgba(37, 99, 235, .22);
+  color: transparent;
+}
+/* 高亮层不可用时，选区就按原生方式显示文字 */
+.md-editor:not(.hl-on) textarea.md-input::selection { color: #fff; }
+[data-theme="light"] .md-editor:not(.hl-on) textarea.md-input::selection { color: #0b1220; }
 
 .md-hl .t-head { color: #ffb347; font-weight: 700; }
 .md-hl .t-fence { color: #7aa2ff; }
@@ -2999,8 +3019,19 @@ document.getElementById('year').textContent = new Date().getFullYear();
     // 语法高亮层：textarea 文字透明，底层实时渲染着色后的源码
     var hl = document.getElementById(ta.id + '-hl');
     var layer = hl ? hl.closest('.md-hl') : null;
+    var box = hl ? hl.closest('.md-editor') : null;
     function syncHl() {
-      if (hl) hl.innerHTML = hlMarkdown(ta.value) + '\n';
+      if (!hl) return;
+      try {
+        hl.innerHTML = hlMarkdown(ta.value) + '\n';
+        // 渲染成功：隐藏原生文字，由高亮层显示彩色源码
+        if (box) box.classList.add('hl-on');
+        ta.classList.remove('no-hl');
+      } catch (e) {
+        // 万一高亮渲染出错，退回原生文字，绝不让编辑区变成一片空白
+        if (box) box.classList.remove('hl-on');
+        ta.classList.add('no-hl');
+      }
     }
     function syncScroll() {
       if (layer) {
