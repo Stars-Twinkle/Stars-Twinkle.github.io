@@ -2277,7 +2277,9 @@ document.getElementById('year').textContent = new Date().getFullYear();
     // 9) 还原各类占位符
     S = S.replace(/\u0001I(\d+)\u0001/g, function (m, i) {
       var o = imgs[i];
-      if (!/^(https?:|data:image\/|\.{0,2}\/)/i.test(o.url)) {
+      // 只拦危险协议（并保留原样文本），其余一律放行：
+      // 相对路径（favicon.png、images/a.png）、绝对路径、http(s)、data:image 都可以。
+      if (/^\s*(?:javascript|vbscript|data:text\/html|file|blob):/i.test(o.url)) {
         return esc('![' + o.alt + '](' + o.url + ')');
       }
       return '<img src="' + esc(o.url) + '" alt="' + esc(o.alt) + '"' +
@@ -2288,7 +2290,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
       var label = esc(o.text)
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/\*([^*]+)\*/g, '<em>$1</em>');
-      if (!/^(https?:|mailto:|#|\/|\.{0,2}\/)/i.test(o.url)) return label;
+      // 同样只拦危险协议；相对路径的链接（如 article.html）也要能用
+      if (/^\s*(?:javascript|vbscript|data:text\/html):/i.test(o.url)) return label;
       return '<a href="' + esc(o.url) + '"' + (o.title ? ' title="' + esc(o.title) + '"' : '') +
         ' target="_blank" rel="noopener noreferrer">' + label + '</a>';
     });
