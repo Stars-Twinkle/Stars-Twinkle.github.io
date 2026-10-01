@@ -1379,7 +1379,7 @@ select.admin-input { cursor: pointer; }
   word-break: break-word;
   tab-size: 2;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;             /* 与 textarea 保持一致，横向也不会错位 */
   scrollbar-width: none;        /* 自己滚动，但不显示滚动条 */
   pointer-events: none;
 }
