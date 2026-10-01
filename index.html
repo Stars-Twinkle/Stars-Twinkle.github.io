@@ -125,7 +125,7 @@ body {
   overflow: hidden;
   pointer-events: none;
   user-select: none;
-  font-family: "Cascadia Code", "JetBrains Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+  font-family: Consolas, "Courier New", monospace;
 }
 #codebg .row {
   position: absolute;
@@ -719,7 +719,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 .md-body a:hover { color: var(--text); background-size: 100% 2px; }
 .md-body strong { color: var(--text); }
 .md-body code {
-  font-family: "Cascadia Code", Consolas, monospace;
+  font-family: Consolas, "Courier New", monospace;
   font-size: .9em;
   padding: 1px 6px;
   border-radius: 6px;
@@ -781,7 +781,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   line-height: 1.65;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  font-family: Consolas, "Courier New", monospace;
 }
 /* 行号：内嵌在每一行里，长行折行时也不会错位 */
 .md-code .cl { display: block; }
@@ -821,7 +821,7 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
 }
 .math-block .katex-display { margin: 0; }
 .math-raw {
-  font-family: "Cascadia Code", Consolas, monospace;
+  font-family: Consolas, "Courier New", monospace;
   font-size: .92em;
   padding: 1px 6px;
   border-radius: 6px;
@@ -1343,7 +1343,7 @@ select.admin-input { cursor: pointer; }
 .md-input {
   min-height: 320px;
   resize: vertical;
-  font-family: "Cascadia Code", Consolas, monospace;
+  font-family: Consolas, "Courier New", monospace;
   font-size: 13.5px;
   line-height: 1.7;
 }
@@ -1371,7 +1371,7 @@ select.admin-input { cursor: pointer; }
   border: 0;
   background: none;
   color: var(--text);
-  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  font-family: Consolas, "Courier New", monospace;
   font-size: 13.5px;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -1386,6 +1386,9 @@ select.admin-input { cursor: pointer; }
 .md-editor .md-hl::-webkit-scrollbar { width: 0; height: 0; }
 .md-editor .md-hl,
 .md-editor textarea.md-input {
+  /* 两层强制使用同一个无连字字体栈（原来用的 Cascadia Code / JetBrains Mono
+     带编程连字，且中文字形度量与 textarea 不一致，会造成文字与光标错开）。 */
+  font-family: Consolas, "Courier New", monospace;
   /* 两层必须逐字同宽。这里只做最小干预：
      1) textarea 默认禁用编程连字，普通元素默认启用 → 显式都关掉；
      2) 字距微调（kerning）也统一关掉。
@@ -1413,7 +1416,7 @@ select.admin-input { cursor: pointer; }
   caret-color: var(--accent);
   resize: none;
   outline: none;
-  font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  font-family: Consolas, "Courier New", monospace;
   font-size: 13.5px;
   line-height: 1.7;
   white-space: pre-wrap;
