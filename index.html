@@ -2615,6 +2615,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     var list = load().slice().sort(byTopThenTime);
     if (!list.length) {
       box.innerHTML = '<p class="notice-empty">暂无公告</p>';
+      renderToc([]);            // 没公告时也要把目录收掉，否则会残留上一次的
       return;
     }
     box.innerHTML = list.map(function (n) {
@@ -2637,7 +2638,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
   function renderToc(list) {
     var toc = document.getElementById('notice-toc');
     if (!toc) return;
-    if (list.length < 2) { toc.hidden = true; toc.innerHTML = ''; return; }
+    // 只要有公告就显示目录（之前要求 2 条以上才显示，只有一条时目录会整个消失）
+    if (!list.length) { toc.hidden = true; toc.innerHTML = ''; return; }
     toc.hidden = false;
     toc.innerHTML = '<div class="toc-title">目录</div>' + list.map(function (n) {
       return '<a class="toc-item" href="#notice-' + esc(n.id) + '" data-target="notice-' + esc(n.id) + '">' +
