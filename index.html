@@ -937,26 +937,39 @@ section { padding: clamp(38px, 6vw, 72px) 0; }
   position: fixed;
   inset: 0;
   z-index: 90;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(4, 6, 14, .72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  overflow: auto;
+  display: block;                 /* 不再是居中浮层，改成整页 */
+  padding: 0;
+  background: var(--bg);          /* 不透明，不再透出前台 */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow-y: auto;
 }
-[data-theme="light"] .admin { background: rgba(30, 32, 45, .45); }
+[data-theme="light"] .admin { background: var(--bg); }
 .admin[hidden] { display: none; }
 .admin-card {
   position: relative;
-  width: min(1080px, 96vw);
+  width: 100%;
+  max-width: 1240px;
+  min-height: 100vh;              /* 铺满整屏，像一个独立页面 */
+  margin: 0 auto;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 26px clamp(16px, 3vw, 36px) 48px;
+  /* 让绿色/红色反馈能平滑退去，而不是硬切 */
+  transition: border-color .3s ease, box-shadow .3s ease, background .3s ease;
+}
+/* 登入界面：收成一个居中的表单卡片（此时还没进入后台，居中更好看） */
+.admin:not(.is-panel) .admin-card {
+  max-width: 520px;
+  min-height: 0;
+  margin-top: 12vh;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 26px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
-  /* 让绿色/红色反馈能平滑退去，而不是硬切 */
-  transition: border-color .3s ease, box-shadow .3s ease, background .3s ease;
+  padding: 34px 28px;
 }
 .admin-x {
   position: absolute;
@@ -3457,10 +3470,12 @@ document.getElementById('year').textContent = new Date().getFullYear();
     setChromeHidden(true);
     lockScroll(true);
     if (authed()) {
+      root.classList.add('is-panel');       // 面板模式：整页铺满
       loginView.hidden = true;
       panel.hidden = false;
       refresh();
     } else {
+      root.classList.remove('is-panel');    // 登入模式：居中表单卡片
       loginView.hidden = false;
       panel.hidden = true;
       keyInput.value = '';
