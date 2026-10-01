@@ -3433,8 +3433,26 @@ document.getElementById('year').textContent = new Date().getFullYear();
     document.body.style.overflow = on ? 'hidden' : '';
   }
 
+  /* #admin 打开时把前台（正文、页脚、顶栏的板块链接与视图切换）整体收起，
+     让它看起来就是一个独立的后台页面，而不是压在前台上的浮层。
+     这样你可以把「.../#admin」单独开一个浏览器标签页长期放着。 */
+  function setChromeHidden(hidden) {
+    var main = document.querySelector('main.wrap');
+    var foot = document.querySelector('footer');
+    if (main) main.hidden = hidden;
+    if (foot) foot.hidden = hidden;
+    ['nav-links', 'top'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.hidden = hidden;
+    });
+    var seg = document.querySelector('.seg');
+    if (seg) seg.hidden = hidden;
+    document.title = hidden ? '后台管理 · StarsTwinkle' : 'StarsTwinkle';
+  }
+
   function open() {
     root.hidden = false;
+    setChromeHidden(true);
     lockScroll(true);
     if (authed()) {
       loginView.hidden = true;
@@ -3453,12 +3471,13 @@ document.getElementById('year').textContent = new Date().getFullYear();
     clearOk();
     clearError();
     root.hidden = true;
+    setChromeHidden(false);
     lockScroll(false);
     if (isAdminHash()) location.hash = '';
   }
   function sync() {
     if (isAdminHash()) open();
-    else { root.hidden = true; lockScroll(false); }
+    else { root.hidden = true; setChromeHidden(false); lockScroll(false); }
   }
 
   function today() {
