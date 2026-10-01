@@ -1384,6 +1384,18 @@ select.admin-input { cursor: pointer; }
   pointer-events: none;
 }
 .md-editor .md-hl::-webkit-scrollbar { width: 0; height: 0; }
+.md-editor .md-hl,
+.md-editor textarea.md-input {
+  /* 两层必须逐字同宽。Chrome 对 textarea 默认禁用编程连字（-> != >= 等），
+     而普通元素默认启用；同一个字体下宽度就不同，
+     靠后的文字与 textarea 的光标位置会越差越多（表现就是「文字和光标错开」）。 */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0, "calt" 0, "dlig" 0, "hlig" 0, "kern" 0;
+  font-kerning: none;
+  font-variant-numeric: normal;
+  font-variant-east-asian: normal;
+  text-rendering: geometricPrecision;
+}
 .md-editor textarea.md-input {
   position: relative;
   z-index: 1;
