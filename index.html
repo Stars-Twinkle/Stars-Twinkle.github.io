@@ -1443,18 +1443,17 @@ select.admin-input { cursor: pointer; }
 .md-editor.hl-on textarea.md-input { color: transparent; }
 .md-editor textarea.md-input.no-hl { color: var(--text); }
 
-/* ---------- CodeMirror 接管后的编辑区 ---------- */
+/* ---------- CodeMirror 接管后的编辑区 ----------
+   注意：CodeMirror 必须有「确定高度」才会启用内部滚动，
+   写成 height:auto + max-height 会让它一直长高、再被父元素裁剪，结果就是滚不动。 */
 .md-editor .CodeMirror {
-  height: auto;
-  min-height: 320px;
-  max-height: 62vh;
-  background: transparent !important;   /* 盖掉 CM 主题自带的底色，跟随站点主题 */
+  height: clamp(320px, 55vh, 620px);
+  background: transparent !important;   /* 盖掉 CM 主题自带底色，跟随站点主题 */
   color: var(--text);
   font-family: Consolas, "Courier New", monospace;
   font-size: 13.5px;
   line-height: 1.7;
 }
-.md-editor .CodeMirror-scroll { min-height: 320px; }
 .md-editor .CodeMirror-lines { padding: 12px 0; }
 .md-editor .CodeMirror-line { padding: 0 14px; }
 .md-editor .CodeMirror-gutters { background: transparent; border-right: 0; }
@@ -1465,6 +1464,8 @@ select.admin-input { cursor: pointer; }
 /* CM 接管后隐藏原来的「高亮层 + textarea」两层 */
 .md-editor.cm-on > .md-hl,
 .md-editor.cm-on > textarea.md-input { display: none; }
+/* CM 接管后编辑器容器不要裁剪，交给 CM 自己滚 */
+.md-editor.cm-on { overflow: hidden; }
 .md-editor textarea.md-input::placeholder { color: var(--muted); opacity: .65; }
 /* 选中文本：只画一层半透明底色（在上层高亮文字之下），
    文字保持透明，避免和底层/上层的高亮文字错位重影 */
