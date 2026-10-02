@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
 <link id="hljs-dark" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark-dimmed.min.css">
 <link id="hljs-light" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github.min.css" disabled>
+<!-- 后台编辑器：CodeMirror（单一渲染层，光标与文字天然一致；加载失败会自动回退到原生 textarea） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
 <meta property="og:type" content="website">
 <meta property="og:title" content="StarsTwinkle 的小窝">
 <meta property="og:description" content="StarsTwinkle 的个人主页。">
@@ -1439,6 +1442,29 @@ select.admin-input { cursor: pointer; }
 }
 .md-editor.hl-on textarea.md-input { color: transparent; }
 .md-editor textarea.md-input.no-hl { color: var(--text); }
+
+/* ---------- CodeMirror 接管后的编辑区 ---------- */
+.md-editor .CodeMirror {
+  height: auto;
+  min-height: 320px;
+  max-height: 62vh;
+  background: transparent !important;   /* 盖掉 CM 主题自带的底色，跟随站点主题 */
+  color: var(--text);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.md-editor .CodeMirror-scroll { min-height: 320px; }
+.md-editor .CodeMirror-lines { padding: 12px 0; }
+.md-editor .CodeMirror-line { padding: 0 14px; }
+.md-editor .CodeMirror-gutters { background: transparent; border-right: 0; }
+.md-editor .CodeMirror-cursor { border-left: 2px solid var(--accent); }
+.md-editor .CodeMirror-selected { background: rgba(122, 162, 255, .26) !important; }
+.md-editor .CodeMirror-focused .CodeMirror-selected { background: rgba(122, 162, 255, .34) !important; }
+.md-editor .CodeMirror-activeline-background { background: rgba(255, 255, 255, .035); }
+/* CM 接管后隐藏原来的「高亮层 + textarea」两层 */
+.md-editor.cm-on > .md-hl,
+.md-editor.cm-on > textarea.md-input { display: none; }
 .md-editor textarea.md-input::placeholder { color: var(--muted); opacity: .65; }
 /* 选中文本：只画一层半透明底色（在上层高亮文字之下），
    文字保持透明，避免和底层/上层的高亮文字错位重影 */
@@ -1843,6 +1869,12 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" onload="(window.__renderQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js" onload="(window.__renderQueue||[]).forEach(function(f){try{f()}catch(e){}})"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/markdown/markdown.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
 <script>
 /* ---------- 背景装饰点 ---------- */
 (function () {
@@ -2209,6 +2241,7 @@ footer a { color: var(--accent); text-decoration: none; }
     try { localStorage.setItem('st-theme', next); } catch (e) {}
     syncMeta();
     syncHljs();
+    if (window.STEditorCM) window.STEditorCM.applyTheme();
   });
 })();
 
@@ -3363,6 +3396,71 @@ document.getElementById('year').textContent = new Date().getFullYear();
   };
 })();
 
+/* ---------- CodeMirror 接管后台编辑区 ----------
+   原来用「透明 textarea + 高亮层」两层叠加，而两层的排版引擎不同，
+   中文换行、连字上总有零点几像素的累积差，光标和文字会越差越多。
+   换成 CodeMirror：单一渲染层，光标天然与文字重合。
+   如果 CDN 不可达，这里什么都不做，保留原来的编辑器照常可用。 */
+(function () {
+  var instances = [];
+  function themeName() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'material-darker';
+  }
+  function initOne(ta) {
+    if (!ta || ta.__cm || !window.CodeMirror) return;
+    var box = ta.closest ? ta.closest('.md-editor') : null;
+    if (!box) return;
+    var cm;
+    try {
+      cm = window.CodeMirror(function (el) { box.insertBefore(el, ta); }, {
+        value: ta.value,
+        mode: { name: 'markdown', highlightFormatting: true },
+        theme: themeName(),
+        lineWrapping: true,
+        lineNumbers: false,
+        // 括号/引号自动配对，另外把 Markdown 常用的 $ 和 ` 也加进去
+        autoCloseBrackets: { pairs: '()[]{}`\'\'"$', explode: '[]{}' },
+        matchBrackets: true,
+        styleActiveLine: true,
+        indentUnit: 2,
+        tabSize: 2,
+        indentWithTabs: false,
+        viewportMargin: Infinity
+      });
+    } catch (e) { return; }
+    ta.__cm = cm;
+    box.classList.add('cm-on');
+    // CM 里的改动写回 textarea，并触发 input 让右侧预览刷新
+    cm.on('change', function () {
+      var v = cm.getValue();
+      if (ta.value !== v) {
+        ta.value = v;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    // 后台用代码设值（切换文章 / 新建 / 清空）之后调用这个同步
+    ta.__cmSync = function () {
+      if (cm.getValue() !== ta.value) cm.setValue(ta.value);
+    };
+    instances.push(cm);
+  }
+  window.STEditorCM = {
+    initAll: function () {
+      ['admin-md', 'admin-art-md'].forEach(function (id) {
+        initOne(document.getElementById(id));
+      });
+    },
+    sync: function (ta) { if (ta && ta.__cmSync) ta.__cmSync(); },
+    refresh: function () {
+      instances.forEach(function (cm) { try { cm.refresh(); } catch (e) {} });
+    },
+    applyTheme: function () {
+      var t = themeName();
+      instances.forEach(function (cm) { try { cm.setOption('theme', t); } catch (e) {} });
+    }
+  };
+})();
+
 /* ---------- 板块导航 / 公告目录：平滑滚动 + 滚动高亮 ---------- */
 (function () {
   function scrollToEl(el) {
@@ -3469,6 +3567,11 @@ document.getElementById('year').textContent = new Date().getFullYear();
     root.hidden = false;
     setChromeHidden(true);
     lockScroll(true);
+    // 后台可见之后才初始化 CodeMirror（隐藏容器里量不出尺寸）
+    if (window.STEditorCM) {
+      window.STEditorCM.initAll();
+      setTimeout(function () { window.STEditorCM.refresh(); }, 60);
+    }
     if (authed()) {
       root.classList.add('is-panel');       // 面板模式：整页铺满
       loginView.hidden = true;
@@ -3527,6 +3630,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     if (API.afterRender) API.afterRender(prevEl);
     // textarea 的文字是透明的，值由代码设置时也要让语法高亮层跟上，否则编辑区看起来是空的
     if (window.STEditorSync) window.STEditorSync(mdEl);
+    if (window.STEditorCM) window.STEditorCM.sync(mdEl);
   }
   // 渲染库加载完成后，编辑器预览也要重渲一次
   (window.__renderQueue = window.__renderQueue || []).push(function () { preview(); });
@@ -3915,6 +4019,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
     if (API.afterRender) API.afterRender(artPrevEl);
     // textarea 的文字是透明的，值由代码设置时也要让语法高亮层跟上，否则编辑区看起来是空的
     if (window.STEditorSync) window.STEditorSync(artMdEl);
+    if (window.STEditorCM) window.STEditorCM.sync(artMdEl);
   }
   if (ART) (window.__renderQueue = window.__renderQueue || []).push(function () { artPreview(); });
   artMdEl.addEventListener('input', artPreview);
